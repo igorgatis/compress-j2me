@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="com.googlecode.j2me.compress" basedir="." default="all">
+  <taskdef classpath="tools/proguard.jar" resource="proguard/ant/task.properties" />
+  <target name="all" depends="lib, deploy" />
+
+  <target name="lib">
+    <delete dir="build" />
+    <mkdir dir="build/cmd" />
+    <javac destdir="build/cmd">
+      <src path="cmd" />
+      <src path="../compress-j2me/common" />
+      <src path="../compress-j2me/src" />
+      <src path="../compress-j2me/alt" />
+    </javac>
+    <jar destfile="build/${ant.project.name}-cmd.jar" basedir="build/cmd" manifest="cmd/MANIFEST.MF" />
+  </target>
+
+  <target name="deploy" depends="lib">
+    <delete dir="deploy" />
+    <mkdir dir="deploy" />
+    <copy file="build/${ant.project.name}-cmd.jar" todir="deploy" />
+  </target>
+</project>
