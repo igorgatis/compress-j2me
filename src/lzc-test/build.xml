@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- LZC implementation for J2ME                     -->
+<!-- Copyright 2011 Igor Gatis  All rights reserved. -->
 <project name="j2me-compress-lzc" basedir="." default="all">
   <taskdef classpath="tools/proguard.jar" resource="proguard/ant/task.properties" />
   <target name="all" depends="lib, deploy" />
