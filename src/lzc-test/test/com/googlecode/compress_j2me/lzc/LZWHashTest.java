@@ -1,10 +1,7 @@
 package com.googlecode.compress_j2me.lzc;
 
-
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.googlecode.j2me.compress.LZWHash;
 
 public class LZWHashTest {
 

@@ -2,10 +2,6 @@ package com.googlecode.compress_j2me.lzc;
 
 import java.io.IOException;
 
-import com.googlecode.j2me.compress.LZWInputStream;
-import com.googlecode.j2me.compress.LZWOutputStream;
-import com.googlecode.j2me.compress.LZWStream;
-
 public class Main {
 
   private static void printUsageAndExit(int code) {
