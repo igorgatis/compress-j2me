@@ -1,11 +1,11 @@
-package com.googlecode.j2me.compress;
+package com.googlecode.compress_j2me.lzc;
 
 import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import static com.googlecode.j2me.compress.TestUtil.*;
+import static com.googlecode.compress_j2me.lzc.TestUtil.*;
 
 import com.googlecode.j2me.compress.LZWInputStream;
 import com.googlecode.j2me.compress.LZWOutputStream;

@@ -1,12 +1,9 @@
-package com.googlecode.j2me.compress;
+package com.googlecode.compress_j2me.lzc;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.googlecode.j2me.compress.ByteBuffer;
-import com.googlecode.j2me.compress.LZWDict;
-import com.googlecode.j2me.compress.LZWHash;
 
 
 public class LZWInputStream extends InputStream {
