@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- LZC implementation for J2ME                     -->
 <!-- Copyright 2011 Igor Gatis  All rights reserved. -->
-<project name="j2me-compress-lzc" basedir="." default="all">
+<project name="compress-j2me.lzc" basedir="." default="all">
   <taskdef classpath="tools/proguard.jar" resource="proguard/ant/task.properties" />
-  <target name="all" depends="lib, deploy" />
+  <property file="../lzc/antbuild.properties" />
+  <property name="release-name" value="${ant.project.name}-cmd_${compress-j2me.version}"/>
 
   <target name="lib">
     <delete dir="build" />
@@ -14,12 +15,12 @@
       <src path="../lzc/src" />
       <src path="../lzc/alt" />
     </javac>
-    <jar destfile="build/${ant.project.name}-cmd.jar" basedir="build/cmd" manifest="cmd/MANIFEST.MF" />
+    <jar destfile="build/${release-name}.jar" basedir="build/cmd" manifest="cmd/MANIFEST.MF" />
   </target>
 
-  <target name="deploy" depends="lib">
+  <target name="all" depends="lib">
     <delete dir="deploy" />
     <mkdir dir="deploy" />
-    <copy file="build/${ant.project.name}-cmd.jar" todir="deploy" />
+    <copy file="build/${release-name}.jar" todir="deploy" />
   </target>
 </project>
