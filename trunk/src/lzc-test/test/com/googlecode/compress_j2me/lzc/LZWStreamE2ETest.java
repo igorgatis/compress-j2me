@@ -1,13 +1,15 @@
 package com.googlecode.compress_j2me.lzc;
 
-import java.io.IOException;
+import static com.googlecode.compress_j2me.lzc.TestUtil.file2in;
+import static com.googlecode.compress_j2me.lzc.TestUtil.file2out;
+import static com.googlecode.compress_j2me.lzc.TestUtil.h2in;
+import static com.googlecode.compress_j2me.lzc.TestUtil.h2out;
+import static com.googlecode.compress_j2me.lzc.TestUtil.s2out;
 
-import static com.googlecode.compress_j2me.lzc.TestUtil.*;
+import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.googlecode.j2me.compress.LZWStream;
 
 public class LZWStreamE2ETest {
 
@@ -63,7 +65,8 @@ public class LZWStreamE2ETest {
 
   @Test
   public void test_abcde() throws IOException {
-    LZWStream.compress(TestUtil.s2in("abcde"), baos = h2out("1F9D9061C48C215306"));
+    LZWStream.compress(TestUtil.s2in("abcde"),
+        baos = h2out("1F9D9061C48C215306"));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     LZWStream.uncompress(h2in("1F9D9061C48C215306"), baos = s2out("abcde"));
     Assert.assertEquals(baos.expectedSize(), baos.size());

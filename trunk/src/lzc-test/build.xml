@@ -8,9 +8,9 @@
     <mkdir dir="build/cmd" />
     <javac destdir="build/cmd">
       <src path="cmd" />
-      <src path="../compress-j2me/common" />
-      <src path="../compress-j2me/src" />
-      <src path="../compress-j2me/alt" />
+      <src path="../lzc/common" />
+      <src path="../lzc/src" />
+      <src path="../lzc/alt" />
     </javac>
     <jar destfile="build/${ant.project.name}-cmd.jar" basedir="build/cmd" manifest="cmd/MANIFEST.MF" />
   </target>

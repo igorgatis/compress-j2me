@@ -2,14 +2,11 @@ package com.googlecode.compress_j2me.lzc;
 
 import static com.googlecode.compress_j2me.lzc.TestUtil.h2in;
 
-import com.googlecode.j2me.compress.LZWStream;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import junit.framework.Assert;
-
 
 import org.junit.Test;
 

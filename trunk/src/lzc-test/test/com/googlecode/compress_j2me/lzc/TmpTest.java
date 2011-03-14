@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-
 import org.junit.Test;
-
-import com.googlecode.j2me.compress.LZWStream;
 
 public class TmpTest {
 

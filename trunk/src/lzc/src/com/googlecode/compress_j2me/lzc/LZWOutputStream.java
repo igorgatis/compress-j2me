@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-
-
 public class LZWOutputStream extends OutputStream {
 
   private OutputStream out;
@@ -88,7 +86,7 @@ public class LZWOutputStream extends OutputStream {
     writeBuffer(0);
     this.out.flush();
   }
-  
+
   public int size() {
     return size;
   }
