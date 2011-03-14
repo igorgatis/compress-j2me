@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- LZC implementation for J2ME                     -->
 <!-- Copyright 2011 Igor Gatis  All rights reserved. -->
-<project name="j2me-compress-lzc" basedir="." default="all">
+<project name="compress-j2me.lzc" basedir="." default="all">
   <taskdef classpath="tools/proguard.jar" resource="proguard/ant/task.properties" />
+  <property file="antbuild.properties" />
+  <property name="release-name" value="${ant.project.name}_${compress-j2me.version}" />
+  <property name="alt-release-name" value="${ant.project.name}-alt_${compress-j2me.version}" />
 
   <target name="build">
     <delete dir="build" />
@@ -30,13 +33,13 @@
     <delete dir="deploy" />
     <mkdir dir="deploy" />
     <!-- src -->
-    <jar destfile="build/${ant.project.name}.jar" basedir="build/src" />
+    <jar destfile="build/${release-name}.jar" basedir="build/src" />
     <proguard>
       -libraryjars stubs/cldc-1.1.jar
       -libraryjars stubs/midp-2.0.jar
-      -injars build/${ant.project.name}.jar
-      -outjars deploy/${ant.project.name}.jar
-      -printmapping build/${ant.project.name}.map
+      -injars build/${release-name}.jar
+      -outjars deploy/${release-name}.jar
+      -printmapping build/${release-name}.map
       -allowaccessmodification
       -keep public class * {
           public protected *;
@@ -44,14 +47,14 @@
     </proguard>
 
     <!-- alt -->
-    <jar destfile="build/${ant.project.name}-alt.jar" basedir="build/alt" />
+    <jar destfile="build/${alt-release-name}.jar" basedir="build/alt" />
     <proguard>
       -libraryjars stubs/cldc-1.1.jar
       -libraryjars stubs/midp-2.0.jar
-      -injars build/${ant.project.name}-alt.jar
-      -outjars deploy/${ant.project.name}-alt.jar
-      -printmapping build/${ant.project.name}-alt.map
       -allowaccessmodification
+      -injars build/${alt-release-name}.jar
+      -outjars deploy/${alt-release-name}.jar
+      -printmapping build/${alt-release-name}.map
       -keep public class * {
           public protected *;
       }
