@@ -1,4 +1,4 @@
-package com.googlecode.j2me.compress;
+package com.googlecode.compress_j2me.lzc;
 
 import org.junit.Test;
 

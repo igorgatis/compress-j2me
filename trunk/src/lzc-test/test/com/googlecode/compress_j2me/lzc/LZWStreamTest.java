@@ -1,6 +1,6 @@
-package com.googlecode.j2me.compress;
+package com.googlecode.compress_j2me.lzc;
 
-import static com.googlecode.j2me.compress.TestUtil.h2in;
+import static com.googlecode.compress_j2me.lzc.TestUtil.h2in;
 
 import com.googlecode.j2me.compress.LZWStream;
 

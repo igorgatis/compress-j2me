@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="com.googlecode.j2me.compress" basedir="." default="all">
+<project name="j2me-compress-lzc" basedir="." default="all">
   <taskdef classpath="tools/proguard.jar" resource="proguard/ant/task.properties" />
   <target name="all" depends="lib, deploy" />
 
