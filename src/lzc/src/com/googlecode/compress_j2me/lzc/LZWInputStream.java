@@ -83,11 +83,11 @@ public class LZWInputStream extends InputStream {
   }
 
   private void readHeader() throws IOException {
-    int magic = readCode(8) << 8 | readCode(8);
+    int magic = this.in.read() << 8 | this.in.read();
     if (magic != LZWHash.COMPRESS_MAGIC_NUMBER) {
       throw new RuntimeException("Bad magic number " + magic);
     }
-    int flags = readCode(8);
+    int flags = this.in.read();
     block_mode = (flags & LZWHash.BLOCK_MODE_MASK) != 0;
     max_mask_size = flags & LZWHash.MAX_MASK_SIZE_MASK;
     if (max_mask_size > LZWHash.MAX_MASK_SIZE) {

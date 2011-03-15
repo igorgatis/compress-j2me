@@ -43,19 +43,19 @@ public class LZWStream {
   private int offset;
   private int size;
 
-  public LZWStream(InputStream input) {
+  LZWStream(InputStream input) {
     this.in = input;
   }
 
-  public LZWStream(OutputStream output) {
+  LZWStream(OutputStream output) {
     this.out = output;
   }
 
-  public int size() {
+  int size() {
     return this.size;
   }
 
-  public int readCode(int numBits) throws IOException {
+  int readCode(int numBits) throws IOException {
     if (this.in == null) {
       throw new IOException("Not a input stream");
     }
@@ -75,7 +75,7 @@ public class LZWStream {
     return code;
   }
 
-  public void writeCode(int code, int numBits) throws IOException {
+  void writeCode(int code, int numBits) throws IOException {
     if (this.out == null) {
       throw new IOException("Not a output stream");
     }
@@ -92,7 +92,7 @@ public class LZWStream {
     }
   }
 
-  public void end() throws IOException {
+  void end() throws IOException {
     if (this.out == null) {
       throw new IOException("Not a output stream");
     }
@@ -119,17 +119,17 @@ public class LZWStream {
 
   public static int compress(InputStream in, OutputStream out)
       throws IOException {
-    LZWStream lzwOut = new LZWStream(out);
-
-    LZWHash hash = new LZWHash(1 << LZWHash.MAX_MASK_SIZE);
-    int w_code = -1;
 
     // LZC header.
-    lzwOut.writeCode(0x1F, 8);
-    lzwOut.writeCode(0x9D, 8);
+    out.write((byte) 0x1F);
+    out.write((byte) 0x9D);
     // block_mode=true, mask_size=LZWHash.MAX_MASK_SIZE
-    lzwOut.writeCode(LZWHash.BLOCK_MODE_MASK | (0x1F & LZWHash.MAX_MASK_SIZE),
-        8);
+    int flags = LZWHash.BLOCK_MODE_MASK | (0x1F & LZWHash.MAX_MASK_SIZE);
+    out.write((byte) flags);
+
+    LZWStream lzwOut = new LZWStream(out);
+    LZWHash hash = new LZWHash(1 << LZWHash.MAX_MASK_SIZE);
+    int w_code = -1;
 
     int mask_size = LZWHash.INITIAL_MASK_SIZE;
     int k;
@@ -183,18 +183,18 @@ public class LZWStream {
 
   public static int uncompress(InputStream in, OutputStream out)
       throws IOException {
-    LZWStream lzwIn = new LZWStream(in);
 
-    int magic = lzwIn.readCode(8) << 8 | lzwIn.readCode(8);
+    int magic = in.read() << 8 | in.read();
     if (magic != LZWHash.COMPRESS_MAGIC_NUMBER) {
       throw new RuntimeException("Bad magic number " + magic);
     }
-    int flags = lzwIn.readCode(8);
+    int flags = in.read();
     boolean block_mode = (flags & LZWHash.BLOCK_MODE_MASK) != 0;
     int max_mask_size = flags & LZWHash.MAX_MASK_SIZE_MASK;
     if (max_mask_size > LZWHash.MAX_MASK_SIZE) {
       throw new RuntimeException("Cannot handle " + max_mask_size + " bits");
     }
+    LZWStream lzwIn = new LZWStream(in);
     LZWDict dict = new LZWDict(1 << max_mask_size);
     int w_code = -1;
     int bytes = 0;
