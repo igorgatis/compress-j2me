@@ -30,9 +30,9 @@ if [ -n "$output" ]; then
 fi
 
 msg="Relase of $project version $version."
-cmd[0]="svn -m '$msg' mkdir $svn_root/tags/$release/"
-cmd[1]="svn -m '$msg' copy $svn_root/trunk/src/$project $svn_root/tags/$release/"
-cmd[2]="svn -m '$msg' copy $svn_root/trunk/src/$project-test $svn_root/tags/$release/"
+cmd[0]="svn -m \"$msg\" mkdir $svn_root/tags/$release/"
+cmd[1]="svn -m \"$msg\" copy $svn_root/trunk/src/$project $svn_root/tags/$release/"
+cmd[2]="svn -m \"$msg\" copy $svn_root/trunk/src/$project-test $svn_root/tags/$release/"
 
 fake_url="http://compress-j2me"
 echo "${cmd[0]//$svn_root/$fake_url}"
