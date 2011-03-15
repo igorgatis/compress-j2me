@@ -75,10 +75,11 @@ public class LZWOutputStream extends OutputStream {
   }
 
   private void writeHeader() throws IOException {
-    writeCode(0x1F, 8);
-    writeCode(0x9D, 8);
+    this.out.write((byte) 0x1F);
+    this.out.write((byte) 0x9D);
     // block_mode=true, mask_size=LZWHash.MAX_MASK_SIZE
-    writeCode(LZWHash.BLOCK_MODE_MASK | (0x1F & LZWHash.MAX_MASK_SIZE), 8);
+    int flags = LZWHash.BLOCK_MODE_MASK | (0x1F & LZWHash.MAX_MASK_SIZE);
+    this.out.write((byte) flags);
   }
 
   private void compress(int k) throws IOException {
