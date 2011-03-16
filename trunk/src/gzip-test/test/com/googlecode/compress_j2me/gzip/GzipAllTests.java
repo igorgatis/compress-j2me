@@ -37,11 +37,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ GzipStreamTest.class, GzipStreamE2ETest.class })
-public class AllTests {
+@Suite.SuiteClasses({ Crc32StreamTest.class })
+public class GzipAllTests {
 
   public static Test suite() {
-    TestSuite suite = new TestSuite(AllTests.class.getName());
+    TestSuite suite = new TestSuite(GzipAllTests.class.getName());
     //$JUnit-BEGIN$
 
     //$JUnit-END$

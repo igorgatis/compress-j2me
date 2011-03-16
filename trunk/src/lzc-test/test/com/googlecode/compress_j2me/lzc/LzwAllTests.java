@@ -40,10 +40,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({ LZWHashTest.class, LZWDictTest.class,
     LZWStreamTest.class, LZWOutputStreamTest.class, LZWInputStreamTest.class,
     LZWStreamE2ETest.class, LZWIOStreamsE2ETest.class })
-public class AllTests {
+public class LzwAllTests {
 
   public static Test suite() {
-    TestSuite suite = new TestSuite(AllTests.class.getName());
+    TestSuite suite = new TestSuite(LzwAllTests.class.getName());
     //$JUnit-BEGIN$
 
     //$JUnit-END$
