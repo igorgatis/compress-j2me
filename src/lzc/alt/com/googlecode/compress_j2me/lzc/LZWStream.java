@@ -56,9 +56,6 @@ public class LZWStream {
   }
 
   int readCode(int numBits) throws IOException {
-    if (this.in == null) {
-      throw new IOException("Not a input stream");
-    }
     while (this.offset < numBits) {
       int tmp = this.in.read();
       if (tmp < 0) {
@@ -76,9 +73,6 @@ public class LZWStream {
   }
 
   void writeCode(int code, int numBits) throws IOException {
-    if (this.out == null) {
-      throw new IOException("Not a output stream");
-    }
     //System.err.println(numBits + ":" + code);
     int mask = (1 << numBits) - 1;
     this.buffer |= (mask & code) << this.offset;
@@ -93,9 +87,6 @@ public class LZWStream {
   }
 
   void end() throws IOException {
-    if (this.out == null) {
-      throw new IOException("Not a output stream");
-    }
     while (this.offset > 0) {
       this.out.write((byte) this.buffer);
       this.size++;
