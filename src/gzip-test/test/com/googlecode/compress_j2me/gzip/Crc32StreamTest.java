@@ -32,7 +32,6 @@ package com.googlecode.compress_j2me.gzip;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -118,29 +117,42 @@ public class Crc32StreamTest {
 
   @Test
   public void test_CrcValueAfterReset() throws IOException {
-    InputStream in = TestUtil.h2in("");
-    Crc32Stream stream = new Crc32Stream(in);
+    Crc32Stream stream = new Crc32Stream(TestUtil.h2in(""));
     Assert.assertEquals(0x00000000, crc32(stream, 0));
     stream.resetCrc32();
     Assert.assertEquals(0x00000000, crc32(stream, 0));
 
-    in = TestUtil.h2in("4141");
-    stream = new Crc32Stream(in);
+    stream = new Crc32Stream(TestUtil.h2in("4141"));
     Assert.assertEquals(0xD3D99E8B, crc32(stream, 1));
     stream.resetCrc32();
     Assert.assertEquals(0xD3D99E8B, crc32(stream, 1));
 
-    in = TestUtil.h2in("00000000");
-    stream = new Crc32Stream(in);
+    stream = new Crc32Stream(TestUtil.h2in("00000000"));
     Assert.assertEquals(0x41D912FF, crc32(stream, 2));
     stream.resetCrc32();
     Assert.assertEquals(0x41D912FF, crc32(stream, 2));
 
-    in = TestUtil.h2in("414243414243");
-    stream = new Crc32Stream(in);
+    stream = new Crc32Stream(TestUtil.h2in("414243414243"));
     Assert.assertEquals(0xA3830348, crc32(stream, 3));
     stream.resetCrc32();
     Assert.assertEquals(0xA3830348, crc32(stream, 3));
+  }
+
+  @Test
+  public void test_readBytes() throws IOException {
+    Crc32Stream stream = new Crc32Stream(TestUtil.h2in(""));
+    Assert.assertEquals(0x00, stream.readBytes(0));
+    stream = new Crc32Stream(TestUtil.h2in("12"));
+    Assert.assertEquals(0x12, stream.readBytes(1));
+    stream = new Crc32Stream(TestUtil.h2in("1234"));
+    Assert.assertEquals(0x3412, stream.readBytes(2));
+    stream = new Crc32Stream(TestUtil.h2in("123456"));
+    Assert.assertEquals(0x563412, stream.readBytes(3));
+    stream = new Crc32Stream(TestUtil.h2in("12345689"));
+    Assert.assertEquals(0x89563412, stream.readBytes(4));
+    stream = new Crc32Stream(TestUtil.h2in("12345689"));
+    Assert.assertEquals(0x3412, stream.readBytes(2));
+    Assert.assertEquals(0x8956, stream.readBytes(2));
   }
 
   //  private static byte[] toByteStream(int x, int bits) throws IOException {

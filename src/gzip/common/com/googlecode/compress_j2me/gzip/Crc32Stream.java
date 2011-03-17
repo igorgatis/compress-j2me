@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class Crc32Stream {
+class Crc32Stream {
 
   static final int[] crc_table;
 
@@ -62,19 +62,19 @@ public class Crc32Stream {
   private int bitOffset;
   private int outputSize;
 
-  public Crc32Stream(InputStream input) {
+  Crc32Stream(InputStream input) {
     this.in = input;
   }
 
-  public Crc32Stream(OutputStream output) {
+  Crc32Stream(OutputStream output) {
     this.out = output;
   }
 
-  public void resetCrc32() {
+  void resetCrc32() {
     this.rawCrc32 = 0 ^ 0xFFFFFFFF;
   }
 
-  public int getCrc32() {
+  int getCrc32() {
     return (int) (this.rawCrc32 ^ 0xFFFFFFFF);
   }
 
@@ -84,7 +84,7 @@ public class Crc32Stream {
     this.rawCrc32 = c;
   }
 
-  public int read() throws IOException {
+  int read() throws IOException {
     int ch = this.in.read();
     if (ch >= 0) {
       updateCrc((byte) ch);
@@ -92,7 +92,7 @@ public class Crc32Stream {
     return ch;
   }
 
-  public int read(byte[] buffer, int start, int length) throws IOException {
+  int read(byte[] buffer, int start, int length) throws IOException {
     for (int i = 0; i < length; i++) {
       int ch = read();
       if (ch < 0) {
@@ -103,36 +103,54 @@ public class Crc32Stream {
     return length;
   }
 
-  public int readBytes(int n) throws IOException {
+  String readZeroTerminatedString() throws IOException {
+    StringBuffer buffer = new StringBuffer(128);
+    int ch;
+    while ((ch = read()) > 0) {
+      buffer.append((char) ch);
+    }
+    return buffer.toString();
+  }
+
+  private static void checkNoEOF(int ch) throws IOException {
+    if (ch < 0) {
+      throw new IOException("Unexpected EOF.");
+    }
+  }
+
+  int readBytes(int n) throws IOException {
     int v = 0;
-    while (n-- > 0) {
-      v <<= 8;
-      v |= 0xFF & read();
+    for (int i = 0; i < n; i++) {
+      int ch = read();
+      checkNoEOF(ch);
+      ch <<= i << 3;
+      v |= ch;
     }
     return v;
+  }
+
+  int readBits(int numBits) throws IOException {
+    while (this.bitOffset < numBits) {
+      int tmp = read();
+      if (tmp < 0) {
+        checkNoEOF(tmp);
+        //return -1;
+      }
+      this.bitBuffer |= tmp << this.bitOffset;
+      this.bitOffset += 8;
+    }
+    int mask = (1 << numBits) - 1;
+    int code = this.bitBuffer & mask;
+    this.bitBuffer >>>= numBits;
+    this.bitOffset -= numBits;
+    //System.err.println(numBits + ":" + code);
+    return code;
   }
 
   //  public int size() {
   //    return this.outputSize;
   //  }
 
-    public int readCode(int numBits) throws IOException {
-      while (this.bitOffset < numBits) {
-        int tmp = this.in.read();
-        if (tmp < 0) {
-          return -1;
-        }
-        this.bitBuffer |= tmp << this.bitOffset;
-        this.bitOffset += 8;
-      }
-      int mask = (1 << numBits) - 1;
-      int code = this.bitBuffer & mask;
-      this.bitBuffer >>>= numBits;
-      this.bitOffset -= numBits;
-      //System.err.println(numBits + ":" + code);
-      return code;
-    }
-  
   //  public void writeCode(int code, int numBits) throws IOException {
   //    if (this.out == null) {
   //      throw new IOException("Not a output stream");
