@@ -184,7 +184,7 @@ public class Gzip {
 
   public static Gzip gunzip(InputStream in, OutputStream out)
       throws IOException {
-    return gunzip(new ZStream(in, false, 0), new ZStream(in, true,
+    return gunzip(new ZStream(in, false, 0), new ZStream(out, true,
         DEFAULT_WINDOW_BITS));
   }
 }

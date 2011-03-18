@@ -1,10 +1,12 @@
 package com.googlecode.compress_j2me.gzip;
 
+import java.io.IOException;
+
 import junit.framework.Assert;
 
 import org.junit.Test;
 
-public class HuffmanTest {
+public class HuffmanTest extends UnitTest {
 
   static int rpath(int path, int len) {
     int v = 0;
@@ -62,6 +64,14 @@ public class HuffmanTest {
   @Test
   public void testFixedLiteralsTree() {
     int[] tree = Huffman.FIXED_LITERALS_TREE;
+    Assert.assertEquals(0, TreeNode.pointer(tree, rpath(0x30, 8)));
+    Assert.assertEquals(143, TreeNode.pointer(tree, rpath(0xBF, 8)));
+    Assert.assertEquals(144, TreeNode.pointer(tree, rpath(0x190, 9)));
+    Assert.assertEquals(255, TreeNode.pointer(tree, rpath(0x1FF, 9)));
+    Assert.assertEquals(256, TreeNode.pointer(tree, rpath(0x00, 7)));
+    Assert.assertEquals(279, TreeNode.pointer(tree, rpath(0x17, 7)));
+    Assert.assertEquals(280, TreeNode.pointer(tree, rpath(0xC0, 8)));
+    Assert.assertEquals(287, TreeNode.pointer(tree, rpath(0xC7, 8)));
     for (int i = 0; i <= 286; i++) {
       int rpath = 0;
       if (i < 144) {
@@ -75,7 +85,6 @@ public class HuffmanTest {
       }
       Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
     }
-    Assert.assertEquals(256, TreeNode.pointer(tree, 0x00));
   }
 
   @Test
@@ -85,5 +94,29 @@ public class HuffmanTest {
       int rpath = HuffmanTest.rpath(i, 5);
       Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
     }
+  }
+
+  @Test
+  public void testDecodeSymbol() throws IOException {
+    int[] tree = Huffman.FIXED_LITERALS_TREE;
+    ZStream in = new ZStream(h2in("C0"));
+    Assert.assertEquals(0, Huffman.decodeSymbol(in, tree));
+    in = new ZStream(h2in("DF"));
+    Assert.assertEquals(143, Huffman.decodeSymbol(in, tree));
+
+    in = new ZStream(h2in("1300"));
+    Assert.assertEquals(144, Huffman.decodeSymbol(in, tree));
+    in = new ZStream(h2in("FF01"));
+    Assert.assertEquals(255, Huffman.decodeSymbol(in, tree));
+    
+    in = new ZStream(h2in("00"));
+    Assert.assertEquals(256, Huffman.decodeSymbol(in, tree));
+    in = new ZStream(h2in("74"));
+    Assert.assertEquals(279, Huffman.decodeSymbol(in, tree));
+    
+    in = new ZStream(h2in("30"));
+    Assert.assertEquals(280, Huffman.decodeSymbol(in, tree));
+    in = new ZStream(h2in("E3"));
+    Assert.assertEquals(287, Huffman.decodeSymbol(in, tree));
   }
 }

@@ -81,7 +81,11 @@ public class TreeNode {
       for (int i = 0; i < prefix.length(); i++) {
         buffer.append("  ");
       }
-      System.out.println(prefix + " " + labels[value]);
+      if (labels != null) {
+        System.out.println(prefix + " " + labels[value]);
+      } else {
+        System.out.println(prefix + " " + value);
+      }
       return;
     }
     TreeNode node = new TreeNode(tree[idx]);
@@ -95,6 +99,10 @@ public class TreeNode {
 
   public static void printCodes(int[] tree, String[] labels) {
     printCodes(tree, 0, "", labels);
+  }
+
+  public static void printCodes(int[] tree) {
+    printCodes(tree, 0, "", null);
   }
 
   private static int pointer(int[] tree, int idx, int reservedPath) {
