@@ -106,17 +106,17 @@ class Huffman {
     int node = 0;
     do {
       int child_offset = 0;
-      if (in.readBits(1) == 1) {
+      if (in.readBits(1) == 0) {
         child_offset = LEFT_CHILD_OFFSET;
       }
       int child_content = (tree[node] >>> child_offset) & CHILD_CONTENT_MASK;
-      if (child_content < MAX_CHILD_INDEX) {
-        node = child_content;
-      } else {
-        return child_content - MAX_CHILD_INDEX;
+      int value = getValue(child_content);
+      if (value >= 0) {
+        return value;
       }
+      node = child_content;
     } while (node > 0);
-    return -1;
+    throw new IOException("code not found");
   }
 
   //---------------------------------------------------------------------------
