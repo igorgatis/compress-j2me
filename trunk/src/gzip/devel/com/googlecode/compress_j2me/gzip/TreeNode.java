@@ -1,7 +1,6 @@
 package com.googlecode.compress_j2me.gzip;
 
 public class TreeNode {
-  int pointer;
   int left;
   int right;
 
@@ -10,25 +9,27 @@ public class TreeNode {
   }
 
   public void set(int content) {
-    left = (content >>> Huffman.LEFT_CHILD_OFFSET) & Huffman.CHILD_INDEX_MASK;
-    right = (content >>> Huffman.RIGHT_CHILD_OFFSET) & Huffman.CHILD_INDEX_MASK;
-    pointer = (content >>> Huffman.POINTER_OFFSET) & Huffman.POINTER_MASK;
-    if (pointer == Huffman.NO_POINTER) {
-      pointer = -1;
-    }
+    left = (content >>> Huffman.LEFT_CHILD_OFFSET) & Huffman.CHILD_CONTENT_MASK;
+    right = (content >>> Huffman.RIGHT_CHILD_OFFSET)
+        & Huffman.CHILD_CONTENT_MASK;
   }
 
   @Override
   public String toString() {
-    return "(" + pointer + "," + left + "," + right + ")";
+    return "(" + left + "," + right + ")";
   }
 
   private static void printTree(int[] tree, int idx, String prefix) {
+    if (idx > Huffman.MAX_CHILD_INDEX) {
+      int value = idx - Huffman.MAX_CHILD_INDEX;
+      System.out.println(prefix + "(" + value + ")");
+      return;
+    }
     TreeNode node = new TreeNode(tree[idx]);
     if (node.right > 0) {
       printTree(tree, node.right, prefix + "  ");
     }
-    System.out.println(prefix + node.pointer);
+    System.out.println(prefix + "[" + idx + "]");
     if (node.left > 0) {
       printTree(tree, node.left, prefix + "  ");
     }
@@ -40,13 +41,18 @@ public class TreeNode {
 
   private static StringBuffer treeToString(int[] tree, int idx,
       StringBuffer buffer) {
+    if (idx > Huffman.MAX_CHILD_INDEX) {
+      int value = idx - Huffman.MAX_CHILD_INDEX;
+      buffer.append("(" + value + ")");
+      return buffer;
+    }
     TreeNode node = new TreeNode(tree[idx]);
     if (node.left > 0) {
       buffer.append('[');
       treeToString(tree, node.left, buffer);
       buffer.append(']');
     }
-    buffer.append(node.pointer);
+    buffer.append(idx);
     if (node.right > 0) {
       buffer.append('[');
       treeToString(tree, node.right, buffer);
@@ -70,19 +76,18 @@ public class TreeNode {
 
   private static void printCodes(int[] tree, int idx, String prefix,
       String[] labels) {
+    if (idx > Huffman.MAX_CHILD_INDEX) {
+      StringBuffer buffer = new StringBuffer(2 * prefix.length());
+      for (int i = 0; i < prefix.length(); i++) {
+        buffer.append("  ");
+      }
+      int value = idx - Huffman.MAX_CHILD_INDEX;
+      System.out.println(prefix + " " + labels[value]);
+      return;
+    }
     TreeNode node = new TreeNode(tree[idx]);
     if (node.left > 0) {
       printCodes(tree, node.left, prefix + "0", labels);
-    }
-    StringBuffer buffer = new StringBuffer(2 * prefix.length());
-    for (int i = 0; i < prefix.length(); i++) {
-      buffer.append("  ");
-    }
-    if (node.pointer == -1) {
-      //System.out.println(buffer + "+");
-    } else {
-      //System.out.println(buffer + prefix + " " + labels[node.pointer]);
-      System.out.println(prefix + " " + labels[node.pointer]);
     }
     if (node.right > 0) {
       printCodes(tree, node.right, prefix + "1", labels);
@@ -94,10 +99,10 @@ public class TreeNode {
   }
 
   private static int pointer(int[] tree, int idx, int reservedPath) {
-    TreeNode node = new TreeNode(tree[idx]);
-    if (node.pointer != -1) {
-      return node.pointer;
+    if (idx > Huffman.MAX_CHILD_INDEX) {
+      return idx - Huffman.MAX_CHILD_INDEX;
     }
+    TreeNode node = new TreeNode(tree[idx]);
     if ((reservedPath & 0x01) != 0) {
       return pointer(tree, node.right, reservedPath >>> 1);
     } else {
