@@ -8,8 +8,8 @@ class WindowedStream {
 
   private byte[] circularBuffer;
   private int bufferMask;
-  private int offset;
-  private int length;
+  private int bufferOffset;
+  private int bufferSize;
 
   private InputStream in;
   private OutputStream out;
@@ -28,15 +28,19 @@ class WindowedStream {
 
   public void write(int ch) throws IOException {
     this.out.write(ch);
-    this.offset = (this.offset + 1) & this.bufferMask;
-    this.circularBuffer[this.offset] = (byte) ch;
-    if (this.length < this.circularBuffer.length) {
-      this.length++;
+    this.bufferOffset = (this.bufferOffset + 1) & this.bufferMask;
+    this.circularBuffer[this.bufferOffset] = (byte) ch;
+    if (this.bufferSize < this.circularBuffer.length) {
+      this.bufferSize++;
     }
   }
 
-  public void copy(int start, int length) throws IOException {
-    int localOffset = (this.offset + start) & this.bufferMask;
+  public void copyFromEnd(int distance, int length) throws IOException {
+    if (distance > this.bufferSize) {
+      throw new IOException("invalid distance");
+    }
+    int start = this.bufferSize - distance;
+    int localOffset = (this.bufferOffset + start) & this.bufferMask;
     for (int i = 0; i < length; i++) {
       int idx = (localOffset + i) & this.bufferMask;
       write(this.circularBuffer[idx]);

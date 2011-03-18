@@ -6,25 +6,53 @@ import java.io.OutputStream;
 
 public class Gzip {
 
-  public static final int GZIP_MAGIC_NUMBER = 0x1F8B;
+  private static final byte BFINAL_MASK = (byte) 0x01;
+  private static final byte BTYPE_MASK = 0x06;
+  private static final byte BTYPE_NO_COMPRESSION = 0x00;
+  private static final byte BTYPE_STATIC_HUFFMAN = 0x01;
+  private static final byte BTYPE_DYNAMIC_HUFFMAN = 0x02;
+  private static final byte BTYPE_RESERVED = 0x03;
+
   public static final int DEFAULT_WINDOW_BITS = 15;
 
-  private static final byte FTEXT = 0x01;
-  private static final byte FHCRC = 0x02;
-  private static final byte FEXTRA = 0x04;
-  private static final byte FNAME = 0x08;
-  private static final byte FCOMMENT = 0x10;
-  private static final byte FRESERVED = (byte) 0xE0;
-  private static final byte CM_DEFLATE = 8;
+  private static final int END_OF_BLOCK_CODE = 256;
 
-  private static final byte BFINAL_MASK = (byte) 0x80;
-  private static final byte BTYPE_MASK = 0x60;
-  private static final byte BTYPE_NO_COMPRESSION = 0x00;
-  private static final byte BTYPE_STATIC_HUFFMAN = 0x20;
-  private static final byte BTYPE_DYNAMIC_HUFFMAN = 0x40;
-  private static final byte BTYPE_RESERVED = 0x60;
+  // 0x01FF=length, 0xE000=extra bits.
+  static final int _LIT_LEN_EXTRA_OFFSET = 9;
+  static final int _LIT_LEN_MASK = 0x1FF;
+  static final char[] LITERALS_LENGTHS = new char[] { //
+      0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0x20B, 0x20D, 0x20F, 0x211,
+      0x413, 0x417, 0x41B, 0x41F, 0x623, 0x62B, 0x633, 0x63B, 0x843, 0x853,
+      0x863, 0x873, 0xA83, 0xAA3, 0xAC3, 0xAE3, 0x102 };
 
-  static final int[] CANONICAL_LIT_CODES;
+  static int literalLength(int litCode, Crc32Stream in) throws IOException {
+    int length = litCode & _LIT_LEN_MASK;
+    int extraBits = litCode >>> _LIT_LEN_EXTRA_OFFSET;
+    if (extraBits > 0) {
+      length += in.readBits(extraBits);
+    }
+    return length;
+  }
+
+  // 0xF0=distance, 0x0F=extra bits.
+  static final int _LIT_DIST_EXTRA_OFFSET = 9;
+  static final int _LIT_DIST_MASK = 0xFFFF;
+  static final int[] LITERALS_DISTANCES = new int[] { //
+      0x01, 0x02, 0x03, 0x04, 0x10005, 0x10007, 0x20009, 0x2000D, 0x30011,
+      0x30019, 0x40021, 0x40031, 0x50041, 0x50061, 0x60081, 0x600C1, 0x70101,
+      0x70181, 0x80201, 0x80301, 0x90401, 0x90601, 0xA0801, 0xA0C01, 0xB1001,
+      0xB1801, 0xC2001, 0xC3001, 0xD4001, 0xD6001, };
+
+  static int literalDistance(int litCode, Crc32Stream in) throws IOException {
+    int distance = litCode & _LIT_DIST_MASK;
+    int extraBits = litCode >>> _LIT_DIST_EXTRA_OFFSET;
+    if (extraBits > 0) {
+      distance += in.readBits(extraBits);
+    }
+    return distance;
+  }
+
+  static final int[] FIXED_LITERALS_TREE;
   static {
     char[] node_len = new char[288];
     int i = 0;
@@ -40,58 +68,96 @@ public class Gzip {
     while (i < node_len.length) {
       node_len[i++] = 8;
     }
-    CANONICAL_LIT_CODES = Huffman.buildCodeTree(9, node_len);
+    FIXED_LITERALS_TREE = Huffman.buildCodeTree(9, node_len);
   }
 
-  static final int[] CANONICAL_DIST_CODES;
+  private static void inflateHuffman(Crc32Stream in, WindowedStream out,
+      int[] litLenTree, int[] distTree) throws IOException {
+    int litLenCode = 0;
+    while ((litLenCode = Huffman.decodeSymbol(in, litLenTree)) != END_OF_BLOCK_CODE) {
+      if (litLenCode < END_OF_BLOCK_CODE) {
+        out.write(litLenCode);
+      } else {
+        litLenCode -= (END_OF_BLOCK_CODE + 1);
+        int length = literalLength(litLenCode, in);
+        int distCode = in.readBits(5);
+        int distance = literalDistance(distCode, in);
+        out.copyFromEnd(distance, length);
+      }
+    }
+  }
+
+  static final int[] FIXED_ALPHABET_LENGTHS_TREE;
   static {
     char[] node_len = new char[19];
     for (int i = 0; i < node_len.length; i++) {
       node_len[i] = 5;
     }
-    CANONICAL_DIST_CODES = Huffman.buildCodeTree(5, node_len);
+    FIXED_ALPHABET_LENGTHS_TREE = Huffman.buildCodeTree(5, node_len);
   }
 
-  private static final byte[] HUFF2PERM = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5,
-      11, 4, 12, 3, 13, 2, 14, 1, 15 };
+  static final byte[] ALPHABET_LENGTHS = new byte[] { //
+      0x00, 0x01, 0x02, 0x03, // No extra bits.
+      0x04, 0x05, 0x06, 0x07, // No extra bits.
+      0x08, 0x09, 0x0A, 0x0B, // No extra bits.
+      0x0C, 0x0D, 0x0E, 0x0F, // No extra bits.
+      0x20, 0x30, 0x70, // 
+  };
 
-  private static int decodeSymbol(Crc32Stream crcIn, int[] huff)
-      throws IOException {
-    int state = 0;
-    for (;;) {
-      int m = huff[state];
-      if (crcIn.readBits(1) == 1) {
-        m = (m >>> 16);
-      } else {
-        m &= 0xFFFF;
-      }
-      if (m >= 0x8000) {
-        m &= 0x7FFF;
-        if (m == 0x7FFF) {
-          throw new IOException("invalid Huffman code");
-        }
-        return m;
-      }
-      state = m;
+  static int alphabetLength(int alphCode, Crc32Stream in) throws IOException {
+    int extraBits = (alphCode & 0xF0) >>> 4;
+    if (extraBits > 0) {
+      return in.readBits(extraBits);
     }
+    return alphCode & 0x0F;
   }
 
-  private static void inflateHuffman(Crc32Stream in, WindowedStream out,
-      int[] litCodes, int[] distCodes) throws IOException {
-    //       loop (until end of block code recognized)
-    //          decode literal/length value from input stream
-    //          if value < 256
-    //             copy value (literal byte) to output stream
-    //          otherwise
-    //             if value = end of block (256)
-    //                break from loop
-    //             otherwise (value = 257..285)
-    //                decode distance from input stream
-    //
-    //                move backwards distance bytes in the output
-    //                stream, and copy length bytes from this
-    //                position to the output stream.
-    //       end loop
+  // 0xF0=distance, 0x0F=extra bits.
+  static final byte[] ALPHABET_DISTANCES = new byte[] { //
+  };
+
+  static int alphabetDistance(int litCode, Crc32Stream in) throws IOException {
+    int extraBits = litCode & 0x0F;
+    if (extraBits > 0) {
+      return in.readBits(extraBits);
+    }
+    return (litCode & 0xF0) >>> 4;
+  }
+
+  private static final byte[] HUFF2PERM = { //
+      16, 17, 18, 0, 8, 7, 9, 6, 10, 5, //
+      11, 4, 12, 3, 13, 2, 14, 1, 15 //
+  };
+
+  private static char[] readLengths(Crc32Stream in, int[] hcTree, int size)
+      throws IOException {
+    char[] lengths = new char[size];
+    for (int i = 0; i < lengths.length; i++) {
+      int code = Huffman.decodeSymbol(in, hcTree);
+      int toCopy = 0;
+      int repeat = 0;
+      switch (code) {
+      case 16:
+        toCopy = lengths[i - 1];
+        repeat = 3 + in.readBits(2);
+        break;
+      case 17:
+        toCopy = lengths[0];
+        repeat = 3 + in.readBits(3);
+        break;
+      case 18:
+        toCopy = lengths[0];
+        repeat = 11 + in.readBits(3);
+        break;
+      default:
+        lengths[i] = (char) code;
+        continue;
+      }
+      for (; repeat > 0 && i < lengths.length; i++) {
+        lengths[i] = (char) toCopy;
+      }
+    }
+    return lengths;
   }
 
   private static void inflateDynamicHuffman(Crc32Stream in, WindowedStream out)
@@ -103,58 +169,19 @@ public class Gzip {
     for (int i = 0; i < hclen; i++) {
       h2CodeLen[HUFF2PERM[i]] = (char) in.readBits(3);
     }
-
-    int[] huff2 = Huffman.buildCodeTree(7, h2CodeLen);
-
-    int[] tmpCodeLen = new int[hlit + hdist];
-    int p = 0;
-    int prev = -1;
-    while (p < tmpCodeLen.length) {
-      int repeat;
-      int s = decodeSymbol(in, huff2);
-      switch (s) {
-      case 16:
-        if (prev < 0) {
-          throw new IOException("repeat code at beginning");
-        }
-        repeat = 3 + in.readBits(2);
-        break;
-      case 17:
-        prev = 0;
-        repeat = 3 + in.readBits(3);
-        break;
-      case 18:
-        prev = 0;
-        repeat = 11 + in.readBits(7);
-        break;
-      default:
-        tmpCodeLen[p++] = s;
-        prev = s;
-        continue;
-      }
-      if ((p + repeat) > tmpCodeLen.length) {
-        throw new IOException("repeat code beyond actual length");
-      }
-      while (repeat-- > 0) {
-        tmpCodeLen[p++] = prev;
-      }
-    }
-
-    char[] litCodeLen = new char[286];
-    System.arraycopy(tmpCodeLen, 0, litCodeLen, 0, hlit);
-    char[] distCodeLen = new char[32];
-    System.arraycopy(tmpCodeLen, hlit, distCodeLen, 0, hdist);
-
-    int[] litCodes = Huffman.buildCodeTree(15, litCodeLen);
-    int[] distCodes = Huffman.buildCodeTree(15, distCodeLen);
-    inflateHuffman(in, out, litCodes, distCodes);
+    int[] hcTree = Huffman.buildCodeTree(7, h2CodeLen);
+    char[] litCodeLen = readLengths(in, hcTree, hlit);
+    char[] distCodeLen = readLengths(in, hcTree, hdist);
+    int[] litLenTree = Huffman.buildCodeTree(15, litCodeLen);
+    int[] distTree = Huffman.buildCodeTree(15, distCodeLen);
+    inflateHuffman(in, out, litLenTree, distTree);
   }
 
   private static void inflateRawBlock(Crc32Stream in, OutputStream out)
       throws IOException {
     int len = in.readBytes(2);
     int nlen = in.readBytes(2);
-    if ((len ^ 0xFF) != nlen) {
+    if ((len ^ nlen) != 0xFFFF) {
       throw new IOException("Invalid block.");
     }
     while (len-- > 0) {
@@ -169,16 +196,18 @@ public class Gzip {
   private static int inflate(Crc32Stream in, OutputStream out)
       throws IOException {
     WindowedStream stream = new WindowedStream(out, DEFAULT_WINDOW_BITS);
-    int blockHeader;
+    boolean finalBlock = false;
     do {
-      blockHeader = in.read();
-      int blockType = (blockHeader & BTYPE_MASK);
+      finalBlock = in.readBits(1) != 0;
+      int blockType = in.readBits(2);
       switch (blockType) {
       case BTYPE_NO_COMPRESSION:
+        in.readBits(5); // Discard the rest of header.
         inflateRawBlock(in, out);
         break;
       case BTYPE_STATIC_HUFFMAN:
-        inflateHuffman(in, stream, CANONICAL_LIT_CODES, CANONICAL_DIST_CODES);
+        inflateHuffman(in, stream, FIXED_LITERALS_TREE,
+            FIXED_ALPHABET_LENGTHS_TREE);
         break;
       case BTYPE_DYNAMIC_HUFFMAN:
         inflateDynamicHuffman(in, stream);
@@ -187,7 +216,7 @@ public class Gzip {
       case BTYPE_RESERVED:
         throw new IOException("Invalid block.");
       }
-    } while ((blockHeader & BFINAL_MASK) == 0);
+    } while (!finalBlock);
     return -1;
   }
 
@@ -195,6 +224,15 @@ public class Gzip {
       throws IOException {
     return inflate(new Crc32Stream(in), out);
   }
+
+  public static final int GZIP_MAGIC_NUMBER = 0x1F8B;
+  private static final byte FTEXT = 0x01;
+  private static final byte FHCRC = 0x02;
+  private static final byte FEXTRA = 0x04;
+  private static final byte FNAME = 0x08;
+  private static final byte FCOMMENT = 0x10;
+  private static final byte FRESERVED = (byte) 0xE0;
+  private static final byte CM_DEFLATE = 8;
 
   static Gzip readHeader(Crc32Stream crcIn) throws IOException {
     Gzip gzip = new Gzip();
