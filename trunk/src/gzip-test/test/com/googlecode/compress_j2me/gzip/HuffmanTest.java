@@ -26,7 +26,7 @@ public class HuffmanTest {
     Assert.assertEquals(1, TreeNode.pointer(tree, rpath(0x00, 1)));
     Assert.assertEquals(2, TreeNode.pointer(tree, rpath(0x06, 3)));
     Assert.assertEquals(3, TreeNode.pointer(tree, rpath(0x07, 3)));
-    Assert.assertEquals("[1]-1[[0]-1[[2]-1[3]]]", TreeNode.treeToString(tree));
+    Assert.assertEquals("(1)-1((0)-1((2)-1(3)))", TreeNode.treeToString(tree));
   }
 
   @Test
@@ -42,7 +42,7 @@ public class HuffmanTest {
     Assert.assertEquals(5, TreeNode.pointer(tree, rpath(0x00, 2)));
     Assert.assertEquals(6, TreeNode.pointer(tree, rpath(0x0E, 4)));
     Assert.assertEquals(7, TreeNode.pointer(tree, rpath(0x0F, 4)));
-    Assert.assertEquals("[[5]-1[[0]-1[1]]]-1[[[2]-1[3]]-1[[4]-1[[6]-1[7]]]]",
+    Assert.assertEquals("((5)-1((0)-1(1)))-1(((2)-1(3))-1((4)-1((6)-1(7))))",
         TreeNode.treeToString(tree));
   }
 
@@ -75,6 +75,7 @@ public class HuffmanTest {
       }
       Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
     }
+    Assert.assertEquals(256, TreeNode.pointer(tree, 0x00));
   }
 
   @Test
