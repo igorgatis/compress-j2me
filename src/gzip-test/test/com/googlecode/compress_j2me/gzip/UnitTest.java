@@ -34,6 +34,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import junit.framework.Assert;
 
@@ -71,6 +73,15 @@ public class UnitTest {
       Assert.fail(e.toString());
       return null; // makes compiler happy.
     }
+  }
+
+  static void pump(InputStream in, OutputStream out) throws IOException {
+    byte[] buffer = new byte[1024];
+    int read;
+    while ((read = in.read(buffer)) > 0) {
+      out.write(buffer, 0, read);
+    }
+    out.flush();
   }
 
   public static final byte[] s2b(String content) {

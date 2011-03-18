@@ -30,19 +30,12 @@
 
 package com.googlecode.compress_j2me.lzc;
 
-import static com.googlecode.compress_j2me.lzc.TestUtil.file2in;
-import static com.googlecode.compress_j2me.lzc.TestUtil.file2out;
-import static com.googlecode.compress_j2me.lzc.TestUtil.h2in;
-import static com.googlecode.compress_j2me.lzc.TestUtil.h2out;
-import static com.googlecode.compress_j2me.lzc.TestUtil.s2in;
-import static com.googlecode.compress_j2me.lzc.TestUtil.s2out;
-
 import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class LZWIOStreamsE2ETest {
+public class LZWIOStreamsE2ETest extends UnitTest {
   private AssertiveOutputStream baos;
 
   @Test
