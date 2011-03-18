@@ -37,12 +37,12 @@ import java.io.OutputStream;
 
 import org.junit.Test;
 
-public class TmpTest {
+public class TmpTest extends UnitTest {
 
   @Test
   public void test() throws FileNotFoundException, IOException {
-    InputStream in = TestUtil.file2in("./tmp/bash.Z");
-    OutputStream out = TestUtil.file2out("./tmp/bash");
+    InputStream in = file2in("./tmp/bash.Z");
+    OutputStream out = file2out("./tmp/bash");
     LZWStream.uncompress(in, out);
   }
 

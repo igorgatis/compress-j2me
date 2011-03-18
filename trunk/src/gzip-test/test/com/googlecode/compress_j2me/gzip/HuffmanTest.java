@@ -19,7 +19,8 @@ public class HuffmanTest {
 
   @Test
   public void testBuildTreeSample1() {
-    char[] node_len = new char[] { 2, 1, 3, 3 };
+    char[] node_len = new char[] {
+        2, 1, 3, 3 };
     int[] tree = Huffman.buildCodeTree(3, node_len);
     Assert.assertEquals(0, TreeNode.pointer(tree, rpath(0x02, 2)));
     Assert.assertEquals(1, TreeNode.pointer(tree, rpath(0x00, 1)));
@@ -30,7 +31,8 @@ public class HuffmanTest {
 
   @Test
   public void testBuildTreeSample2() {
-    char[] node_len = new char[] { 3, 3, 3, 3, 3, 2, 4, 4 };
+    char[] node_len = new char[] {
+        3, 3, 3, 3, 3, 2, 4, 4 };
     int[] tree = Huffman.buildCodeTree(4, node_len);
     Assert.assertEquals(0, TreeNode.pointer(tree, rpath(0x02, 3)));
     Assert.assertEquals(1, TreeNode.pointer(tree, rpath(0x03, 3)));
@@ -54,6 +56,33 @@ public class HuffmanTest {
         }
         Huffman.buildCodeTree(len, node_len);
       }
+    }
+  }
+
+  @Test
+  public void testFixedLiteralsTree() {
+    int[] tree = Huffman.FIXED_LITERALS_TREE;
+    for (int i = 0; i <= 286; i++) {
+      int rpath = 0;
+      if (i < 144) {
+        rpath = HuffmanTest.rpath(0x30 + i, 8);
+      } else if (i < 256) {
+        rpath = HuffmanTest.rpath(0x190 + (i - 144), 9);
+      } else if (i < 280) {
+        rpath = HuffmanTest.rpath(0x00 + (i - 256), 7);
+      } else {
+        rpath = HuffmanTest.rpath(0xC0 + (i - 280), 8);
+      }
+      Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
+    }
+  }
+
+  @Test
+  public void testFixedAlphabetLengthsTree() {
+    int[] tree = Huffman.FIXED_ALPHABET_LENGTHS_TREE;
+    for (int i = 0; i <= 18; i++) {
+      int rpath = HuffmanTest.rpath(i, 5);
+      Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
     }
   }
 }

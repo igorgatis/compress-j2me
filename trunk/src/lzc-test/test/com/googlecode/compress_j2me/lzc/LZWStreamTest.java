@@ -30,8 +30,6 @@
 
 package com.googlecode.compress_j2me.lzc;
 
-import static com.googlecode.compress_j2me.lzc.TestUtil.h2in;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,7 +38,7 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-public class LZWStreamTest {
+public class LZWStreamTest extends UnitTest {
 
   private static byte[] toByteStream(int x, int bits) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();

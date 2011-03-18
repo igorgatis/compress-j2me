@@ -31,6 +31,7 @@
 package com.googlecode.compress_j2me.gzip;
 
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,6 +42,8 @@ public class GzipE2ETest extends UnitTest {
 
   @Test
   public void testGunzipEmpty() throws IOException {
+    pump(new GZIPInputStream(file2in("samples/empty.gz")), baos = h2out(""));
+
     Gzip gzip = Gzip.gunzip(file2in("samples/empty.gz"), baos = h2out(""));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     Assert.assertEquals(null, gzip.getFilename());
@@ -57,8 +60,8 @@ public class GzipE2ETest extends UnitTest {
 
   @Test
   public void testGunzipHelloWorldFile() throws IOException {
-    Gzip gzip = Gzip
-        .gunzip(file2in("samples/helloworld.gz"), baos = s2out("hello world"));
+    Gzip gzip = Gzip.gunzip(file2in("samples/helloworld.gz"),
+        baos = s2out("hello world"));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     Assert.assertEquals("helloworld.txt", gzip.getFilename());
     Assert.assertEquals(null, gzip.getComment());
