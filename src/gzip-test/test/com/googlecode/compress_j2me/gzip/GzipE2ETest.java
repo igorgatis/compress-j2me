@@ -49,7 +49,7 @@ public class GzipE2ETest extends UnitTest {
 
   @Test
   public void testGunzipA() throws IOException {
-    Gzip gzip = Gzip.gunzip(file2in("samples/a.gz"), baos = h2out("a"));
+    Gzip gzip = Gzip.gunzip(file2in("samples/a.gz"), baos = s2out("a"));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     Assert.assertEquals(null, gzip.getFilename());
     Assert.assertEquals(null, gzip.getComment());
@@ -58,7 +58,7 @@ public class GzipE2ETest extends UnitTest {
   @Test
   public void testGunzipHelloWorldFile() throws IOException {
     Gzip gzip = Gzip
-        .gunzip(file2in("samples/helloworld.gz"), baos = h2out("a"));
+        .gunzip(file2in("samples/helloworld.gz"), baos = s2out("hello world"));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     Assert.assertEquals("helloworld.txt", gzip.getFilename());
     Assert.assertEquals(null, gzip.getComment());
