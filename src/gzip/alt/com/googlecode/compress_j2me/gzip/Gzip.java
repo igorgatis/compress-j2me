@@ -141,7 +141,6 @@ public class Gzip {
     int flg = in.readLittleEndian(1);
     // mtime=4, xfl=1, os=1
     in.skipBytes(6);
-
     if ((flg & FEXTRA) != 0) {
       int xlen = in.readLittleEndian(2);
       while (xlen-- > 0) {

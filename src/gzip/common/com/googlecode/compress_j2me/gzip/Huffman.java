@@ -4,12 +4,28 @@ import java.io.IOException;
 
 class Huffman {
 
-  public static final int RIGHT_CHILD_OFFSET = 0;
-  public static final int LEFT_CHILD_OFFSET = 16;
-  public static final int CHILD_CONTENT_MASK = 0xFFFF;
-  public static final int MAX_CHILD_INDEX = (1 << 13) - 1;
+  //private static final int RIGHT_CHILD_OFFSET = 0;
+  private static final int LEFT_CHILD_OFFSET = 16;
+  private static final int CHILD_CONTENT_MASK = 0xFFFF;
+  private static final int MAX_CHILD_INDEX = 1 << 13;
+
   public static final int MAX_POINTER_INDEX = CHILD_CONTENT_MASK
       - MAX_CHILD_INDEX;
+
+  public static int getValue(int node) {
+    if (node >= MAX_CHILD_INDEX) {
+      return node - MAX_CHILD_INDEX;
+    }
+    return -1;
+  }
+
+  public static int leftChild(int content) {
+    return (content >>> LEFT_CHILD_OFFSET) & CHILD_CONTENT_MASK;
+  }
+
+  public static int rightChild(int content) {
+    return content & CHILD_CONTENT_MASK;
+  }
 
   static int appendChild(int[] tree, int nodeCount, int path, int pathLength,
       int pointer) {
@@ -22,7 +38,7 @@ class Huffman {
       int child_content = (tree[idx] >>> child_offset) & CHILD_CONTENT_MASK;
       if (child_content == 0) {
         // Add new child.
-        if (nodeCount > CHILD_CONTENT_MASK) {
+        if (nodeCount >= MAX_CHILD_INDEX) {
           throw new RuntimeException("Too many nodes: " + nodeCount);
         }
         if (pathLength > 0) {
@@ -30,9 +46,9 @@ class Huffman {
           idx = nodeCount;
           nodeCount++;
         } else {
-          tree[idx] |= (pointer + CHILD_CONTENT_MASK) << child_offset;
+          tree[idx] |= (pointer + MAX_CHILD_INDEX) << child_offset;
         }
-      } else if (child_content <= MAX_CHILD_INDEX) {
+      } else if (child_content < MAX_CHILD_INDEX) {
         // Child exists.
         idx = child_content;
       } else {
@@ -72,6 +88,8 @@ class Huffman {
         int path = next_code[len];
         next_code[len]++;
         nodeCount = appendChild(tree, nodeCount, path, len, n);
+        //System.out.println("=================");
+        //TreeNode.printTree(tree, 0);
       }
     }
     // Shrinks tree if occupations is below 80%.
@@ -92,7 +110,7 @@ class Huffman {
         child_offset = LEFT_CHILD_OFFSET;
       }
       int child_content = (tree[node] >>> child_offset) & CHILD_CONTENT_MASK;
-      if (child_content <= MAX_CHILD_INDEX) {
+      if (child_content < MAX_CHILD_INDEX) {
         node = child_content;
       } else {
         return child_content - MAX_CHILD_INDEX;

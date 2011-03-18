@@ -42,8 +42,6 @@ public class GzipE2ETest extends UnitTest {
 
   @Test
   public void testGunzipEmpty() throws IOException {
-    pump(new GZIPInputStream(file2in("samples/empty.gz")), baos = h2out(""));
-
     Gzip gzip = Gzip.gunzip(file2in("samples/empty.gz"), baos = h2out(""));
     Assert.assertEquals(baos.expectedSize(), baos.size());
     Assert.assertEquals(null, gzip.getFilename());
