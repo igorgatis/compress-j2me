@@ -30,18 +30,40 @@
 
 package com.googlecode.compress_j2me.gzip;
 
-public class GzipStreamE2ETest {
+import java.io.IOException;
 
-  //  private AssertiveOutputStream baos;
-  //
-  //  @Test
-  //  public void testEmpty() throws IOException {
-  //    GzipStream.compress(TestUtil.s2in(""), baos = h2out("1F9D90"));
-  //    Assert.assertEquals(baos.expectedSize(), baos.size());
-  //    GzipStream.uncompress(h2in("1F9D90"), baos = s2out(""));
-  //    Assert.assertEquals(baos.expectedSize(), baos.size());
-  //  }
-  //
+import org.junit.Assert;
+import org.junit.Test;
+
+public class GzipE2ETest extends UnitTest {
+
+  private AssertiveOutputStream baos;
+
+  @Test
+  public void testGunzipEmpty() throws IOException {
+    Gzip gzip = Gzip.gunzip(file2in("samples/empty.gz"), baos = h2out(""));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(null, gzip.getFilename());
+    Assert.assertEquals(null, gzip.getComment());
+  }
+
+  @Test
+  public void testGunzipA() throws IOException {
+    Gzip gzip = Gzip.gunzip(file2in("samples/a.gz"), baos = h2out("a"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(null, gzip.getFilename());
+    Assert.assertEquals(null, gzip.getComment());
+  }
+
+  @Test
+  public void testGunzipHelloWorldFile() throws IOException {
+    Gzip gzip = Gzip
+        .gunzip(file2in("samples/helloworld.gz"), baos = h2out("a"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals("helloworld.txt", gzip.getFilename());
+    Assert.assertEquals(null, gzip.getComment());
+  }
+
   //  @Test
   //  public void test_a() throws IOException {
   //    GzipStream.compress(TestUtil.s2in("a"), baos = h2out("1F9D906100"));

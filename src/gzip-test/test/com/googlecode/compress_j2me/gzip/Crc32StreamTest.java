@@ -98,7 +98,7 @@ public class Crc32StreamTest {
   }
 
   private static int crc32(String hex) throws IOException {
-    byte[] data = TestUtil.h2b(hex);
+    byte[] data = UnitTest.h2b(hex);
     Crc32Stream stream = new Crc32Stream(new ByteArrayInputStream(data));
     return crc32(stream, data.length);
   }
@@ -117,22 +117,22 @@ public class Crc32StreamTest {
 
   @Test
   public void test_CrcValueAfterReset() throws IOException {
-    Crc32Stream stream = new Crc32Stream(TestUtil.h2in(""));
+    Crc32Stream stream = new Crc32Stream(UnitTest.h2in(""));
     Assert.assertEquals(0x00000000, crc32(stream, 0));
     stream.resetCrc32();
     Assert.assertEquals(0x00000000, crc32(stream, 0));
 
-    stream = new Crc32Stream(TestUtil.h2in("4141"));
+    stream = new Crc32Stream(UnitTest.h2in("4141"));
     Assert.assertEquals(0xD3D99E8B, crc32(stream, 1));
     stream.resetCrc32();
     Assert.assertEquals(0xD3D99E8B, crc32(stream, 1));
 
-    stream = new Crc32Stream(TestUtil.h2in("00000000"));
+    stream = new Crc32Stream(UnitTest.h2in("00000000"));
     Assert.assertEquals(0x41D912FF, crc32(stream, 2));
     stream.resetCrc32();
     Assert.assertEquals(0x41D912FF, crc32(stream, 2));
 
-    stream = new Crc32Stream(TestUtil.h2in("414243414243"));
+    stream = new Crc32Stream(UnitTest.h2in("414243414243"));
     Assert.assertEquals(0xA3830348, crc32(stream, 3));
     stream.resetCrc32();
     Assert.assertEquals(0xA3830348, crc32(stream, 3));
@@ -140,17 +140,17 @@ public class Crc32StreamTest {
 
   @Test
   public void test_readBytes() throws IOException {
-    Crc32Stream stream = new Crc32Stream(TestUtil.h2in(""));
+    Crc32Stream stream = new Crc32Stream(UnitTest.h2in(""));
     Assert.assertEquals(0x00, stream.readBytes(0));
-    stream = new Crc32Stream(TestUtil.h2in("12"));
+    stream = new Crc32Stream(UnitTest.h2in("12"));
     Assert.assertEquals(0x12, stream.readBytes(1));
-    stream = new Crc32Stream(TestUtil.h2in("1234"));
+    stream = new Crc32Stream(UnitTest.h2in("1234"));
     Assert.assertEquals(0x3412, stream.readBytes(2));
-    stream = new Crc32Stream(TestUtil.h2in("123456"));
+    stream = new Crc32Stream(UnitTest.h2in("123456"));
     Assert.assertEquals(0x563412, stream.readBytes(3));
-    stream = new Crc32Stream(TestUtil.h2in("12345689"));
+    stream = new Crc32Stream(UnitTest.h2in("12345689"));
     Assert.assertEquals(0x89563412, stream.readBytes(4));
-    stream = new Crc32Stream(TestUtil.h2in("12345689"));
+    stream = new Crc32Stream(UnitTest.h2in("12345689"));
     Assert.assertEquals(0x3412, stream.readBytes(2));
     Assert.assertEquals(0x8956, stream.readBytes(2));
   }
