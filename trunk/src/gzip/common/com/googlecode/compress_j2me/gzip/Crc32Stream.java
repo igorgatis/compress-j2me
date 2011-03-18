@@ -120,10 +120,10 @@ class Crc32Stream {
 
   int readBytes(int n) throws IOException {
     int v = 0;
-    for (int i = 0; i < n; i++) {
+    while (n-- > 0) {
       int ch = read();
       checkNoEOF(ch);
-      ch <<= i << 3;
+      ch <<= n << 3;
       v |= ch;
     }
     return v;

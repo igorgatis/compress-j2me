@@ -16,11 +16,13 @@ public class Gzip {
   private static final byte FCOMMENT = 0x10;
   private static final byte FRESERVED = (byte) 0xE0;
   private static final byte CM_DEFLATE = 8;
+
+  private static final byte BFINAL_MASK = (byte) 0x80;
+  private static final byte BTYPE_MASK = 0x60;
+  private static final byte BTYPE_NO_COMPRESSION = 0x00;
+  private static final byte BTYPE_STATIC_HUFFMAN = 0x20;
   private static final byte BTYPE_DYNAMIC_HUFFMAN = 0x40;
   private static final byte BTYPE_RESERVED = 0x60;
-
-  private static final byte BFINAL = (byte) 0x80;
-  private static final byte BTYPE = 0x60;
 
   static final int[] CANONICAL_LIT_CODES;
   static {
@@ -92,63 +94,76 @@ public class Gzip {
     //       end loop
   }
 
-  private static void inflateHuffman(Crc32Stream in, WindowedStream out,
-      boolean dynamic) throws IOException {
-    int[] litCodes = CANONICAL_LIT_CODES;
-    int[] distCodes = CANONICAL_DIST_CODES;
-    if (dynamic) {
-      int hlit = in.readBits(5) + 257;
-      int hdist = in.readBits(5) + 1;
-      int hclen = in.readBits(4) + 4;
-      char[] h2CodeLen = new char[19];
-      for (int i = 0; i < hclen; i++) {
-        h2CodeLen[HUFF2PERM[i]] = (char) in.readBits(3);
-      }
-
-      int[] huff2 = Huffman.buildCodeTree(7, h2CodeLen);
-
-      int[] tmpCodeLen = new int[hlit + hdist];
-      int p = 0;
-      int prev = -1;
-      while (p < tmpCodeLen.length) {
-        int repeat;
-        int s = decodeSymbol(in, huff2);
-        switch (s) {
-        case 16:
-          if (prev < 0) {
-            throw new IOException("repeat code at beginning");
-          }
-          repeat = 3 + in.readBits(2);
-          break;
-        case 17:
-          prev = 0;
-          repeat = 3 + in.readBits(3);
-          break;
-        case 18:
-          prev = 0;
-          repeat = 11 + in.readBits(7);
-          break;
-        default:
-          tmpCodeLen[p++] = s;
-          prev = s;
-          continue;
-        }
-        if ((p + repeat) > tmpCodeLen.length) {
-          throw new IOException("repeat code beyond actual length");
-        }
-        while (repeat-- > 0) {
-          tmpCodeLen[p++] = prev;
-        }
-      }
-
-      char[] litCodeLen = new char[286];
-      System.arraycopy(tmpCodeLen, 0, litCodeLen, 0, hlit);
-      char[] distCodeLen = new char[32];
-      System.arraycopy(tmpCodeLen, hlit, distCodeLen, 0, hdist);
-      litCodes = Huffman.buildCodeTree(15, litCodeLen);
-      distCodes = Huffman.buildCodeTree(15, distCodeLen);
+  private static void inflateDynamicHuffman(Crc32Stream in, WindowedStream out)
+      throws IOException {
+    int hlit = in.readBits(5) + 257;
+    int hdist = in.readBits(5) + 1;
+    int hclen = in.readBits(4) + 4;
+    char[] h2CodeLen = new char[19];
+    for (int i = 0; i < hclen; i++) {
+      h2CodeLen[HUFF2PERM[i]] = (char) in.readBits(3);
     }
+
+    int[] huff2 = Huffman.buildCodeTree(7, h2CodeLen);
+
+    int[] tmpCodeLen = new int[hlit + hdist];
+    int p = 0;
+    int prev = -1;
+    while (p < tmpCodeLen.length) {
+      int repeat;
+      int s = decodeSymbol(in, huff2);
+      switch (s) {
+      case 16:
+        if (prev < 0) {
+          throw new IOException("repeat code at beginning");
+        }
+        repeat = 3 + in.readBits(2);
+        break;
+      case 17:
+        prev = 0;
+        repeat = 3 + in.readBits(3);
+        break;
+      case 18:
+        prev = 0;
+        repeat = 11 + in.readBits(7);
+        break;
+      default:
+        tmpCodeLen[p++] = s;
+        prev = s;
+        continue;
+      }
+      if ((p + repeat) > tmpCodeLen.length) {
+        throw new IOException("repeat code beyond actual length");
+      }
+      while (repeat-- > 0) {
+        tmpCodeLen[p++] = prev;
+      }
+    }
+
+    char[] litCodeLen = new char[286];
+    System.arraycopy(tmpCodeLen, 0, litCodeLen, 0, hlit);
+    char[] distCodeLen = new char[32];
+    System.arraycopy(tmpCodeLen, hlit, distCodeLen, 0, hdist);
+
+    int[] litCodes = Huffman.buildCodeTree(15, litCodeLen);
+    int[] distCodes = Huffman.buildCodeTree(15, distCodeLen);
     inflateHuffman(in, out, litCodes, distCodes);
+  }
+
+  private static void inflateRawBlock(Crc32Stream in, OutputStream out)
+      throws IOException {
+    int len = in.readBytes(2);
+    int nlen = in.readBytes(2);
+    if ((len ^ 0xFF) != nlen) {
+      throw new IOException("Invalid block.");
+    }
+    while (len-- > 0) {
+      int ch = in.read();
+      if (ch < 0) {
+        throw new IOException("Unexpected EOF.");
+      }
+      out.write(ch);
+    }
   }
 
   private static int inflate(Crc32Stream in, OutputStream out)
@@ -157,26 +172,22 @@ public class Gzip {
     int blockHeader;
     do {
       blockHeader = in.read();
-      int blockType = blockHeader & BTYPE;
-      if (blockType == 0) {
-        int len = in.readBytes(2);
-        int nlen = in.readBytes(2);
-        if ((len ^ 0xFF) != nlen) {
-          throw new IOException("Invalid block.");
-        }
-        while (len-- > 0) {
-          int ch = in.read();
-          if (ch < 0) {
-            throw new IOException("Unexpected EOF.");
-          }
-          out.write(ch);
-        }
-      } else if (blockType == BTYPE_RESERVED) {
+      int blockType = (blockHeader & BTYPE_MASK);
+      switch (blockType) {
+      case BTYPE_NO_COMPRESSION:
+        inflateRawBlock(in, out);
+        break;
+      case BTYPE_STATIC_HUFFMAN:
+        inflateHuffman(in, stream, CANONICAL_LIT_CODES, CANONICAL_DIST_CODES);
+        break;
+      case BTYPE_DYNAMIC_HUFFMAN:
+        inflateDynamicHuffman(in, stream);
+        break;
+      default:
+      case BTYPE_RESERVED:
         throw new IOException("Invalid block.");
-      } else {
-        inflateHuffman(in, stream, blockType == BTYPE_DYNAMIC_HUFFMAN);
       }
-    } while ((blockHeader & BFINAL) == 0);
+    } while ((blockHeader & BFINAL_MASK) == 0);
     return -1;
   }
 
