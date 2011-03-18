@@ -1,7 +1,6 @@
 package com.googlecode.compress_j2me.gzip;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 class WindowedStream {
@@ -11,19 +10,24 @@ class WindowedStream {
   private int bufferOffset;
   private int bufferSize;
 
-  private InputStream in;
+  //private InputStream in;
   private OutputStream out;
+  private long outputSize;
 
-  public WindowedStream(InputStream input, int bits) {
-    this.in = input;
-    this.bufferMask = (1 << bits) - 1;
-    this.circularBuffer = new byte[1 << bits];
-  }
+  //  public WindowedStream(InputStream input, int bits) {
+  //    this.in = input;
+  //    this.bufferMask = (1 << bits) - 1;
+  //    this.circularBuffer = new byte[1 << bits];
+  //  }
 
   public WindowedStream(OutputStream output, int bits) {
     this.out = output;
     this.bufferMask = (1 << bits) - 1;
     this.circularBuffer = new byte[1 << bits];
+  }
+
+  public long getOutputSize() {
+    return outputSize;
   }
 
   public void write(int ch) throws IOException {
@@ -33,6 +37,7 @@ class WindowedStream {
     if (this.bufferSize < this.circularBuffer.length) {
       this.bufferSize++;
     }
+    this.outputSize++;
   }
 
   public void copyFromEnd(int distance, int length) throws IOException {

@@ -6,8 +6,6 @@ import java.io.OutputStream;
 
 public class Gzip {
 
-  private static final byte BFINAL_MASK = (byte) 0x01;
-  private static final byte BTYPE_MASK = 0x06;
   private static final byte BTYPE_NO_COMPRESSION = 0x00;
   private static final byte BTYPE_STATIC_HUFFMAN = 0x01;
   private static final byte BTYPE_DYNAMIC_HUFFMAN = 0x02;
@@ -96,34 +94,6 @@ public class Gzip {
     FIXED_ALPHABET_LENGTHS_TREE = Huffman.buildCodeTree(5, node_len);
   }
 
-  static final byte[] ALPHABET_LENGTHS = new byte[] { //
-      0x00, 0x01, 0x02, 0x03, // No extra bits.
-      0x04, 0x05, 0x06, 0x07, // No extra bits.
-      0x08, 0x09, 0x0A, 0x0B, // No extra bits.
-      0x0C, 0x0D, 0x0E, 0x0F, // No extra bits.
-      0x20, 0x30, 0x70, // 
-  };
-
-  static int alphabetLength(int alphCode, Crc32Stream in) throws IOException {
-    int extraBits = (alphCode & 0xF0) >>> 4;
-    if (extraBits > 0) {
-      return in.readBits(extraBits);
-    }
-    return alphCode & 0x0F;
-  }
-
-  // 0xF0=distance, 0x0F=extra bits.
-  static final byte[] ALPHABET_DISTANCES = new byte[] { //
-  };
-
-  static int alphabetDistance(int litCode, Crc32Stream in) throws IOException {
-    int extraBits = litCode & 0x0F;
-    if (extraBits > 0) {
-      return in.readBits(extraBits);
-    }
-    return (litCode & 0xF0) >>> 4;
-  }
-
   private static final byte[] HUFF2PERM = { //
       16, 17, 18, 0, 8, 7, 9, 6, 10, 5, //
       11, 4, 12, 3, 13, 2, 14, 1, 15 //
@@ -177,7 +147,7 @@ public class Gzip {
     inflateHuffman(in, out, litLenTree, distTree);
   }
 
-  private static void inflateRawBlock(Crc32Stream in, OutputStream out)
+  private static void inflateRawBlock(Crc32Stream in, WindowedStream out)
       throws IOException {
     int len = in.readBytes(2);
     int nlen = in.readBytes(2);
@@ -193,9 +163,8 @@ public class Gzip {
     }
   }
 
-  private static int inflate(Crc32Stream in, OutputStream out)
+  private static int inflate(Crc32Stream in, WindowedStream out)
       throws IOException {
-    WindowedStream stream = new WindowedStream(out, DEFAULT_WINDOW_BITS);
     boolean finalBlock = false;
     do {
       finalBlock = in.readBits(1) != 0;
@@ -206,11 +175,11 @@ public class Gzip {
         inflateRawBlock(in, out);
         break;
       case BTYPE_STATIC_HUFFMAN:
-        inflateHuffman(in, stream, FIXED_LITERALS_TREE,
+        inflateHuffman(in, out, FIXED_LITERALS_TREE,
             FIXED_ALPHABET_LENGTHS_TREE);
         break;
       case BTYPE_DYNAMIC_HUFFMAN:
-        inflateDynamicHuffman(in, stream);
+        inflateDynamicHuffman(in, out);
         break;
       default:
       case BTYPE_RESERVED:
@@ -222,16 +191,17 @@ public class Gzip {
 
   public static int inflate(InputStream in, OutputStream out)
       throws IOException {
-    return inflate(new Crc32Stream(in), out);
+    WindowedStream stream = new WindowedStream(out, DEFAULT_WINDOW_BITS);
+    return inflate(new Crc32Stream(in), stream);
   }
 
   public static final int GZIP_MAGIC_NUMBER = 0x1F8B;
-  private static final byte FTEXT = 0x01;
+  //private static final byte FTEXT = 0x01;
   private static final byte FHCRC = 0x02;
   private static final byte FEXTRA = 0x04;
   private static final byte FNAME = 0x08;
   private static final byte FCOMMENT = 0x10;
-  private static final byte FRESERVED = (byte) 0xE0;
+  //private static final byte FRESERVED = (byte) 0xE0;
   private static final byte CM_DEFLATE = 8;
 
   static Gzip readHeader(Crc32Stream crcIn) throws IOException {
@@ -245,9 +215,9 @@ public class Gzip {
       throw new IOException("Unsupported CM=" + cm);
     }
     int flg = crcIn.readBytes(1);
-    int mtime = crcIn.readBytes(4);
-    int xfl = crcIn.readBytes(1);
-    int os = crcIn.readBytes(1);
+    /* int mtime = */crcIn.readBytes(4);
+    /* int xfl = */crcIn.readBytes(1);
+    /* int os = */crcIn.readBytes(1);
 
     if ((flg & FEXTRA) != 0) {
       int xlen = crcIn.readBytes(2);
@@ -277,7 +247,8 @@ public class Gzip {
     Gzip gzip = readHeader(crc32stream);
     // Uncompress body.
     crc32stream.resetCrc32();
-    inflate(crc32stream, out);
+    WindowedStream stream = new WindowedStream(out, DEFAULT_WINDOW_BITS);
+    inflate(crc32stream, stream);
     // Read footer.
     int bodyCrc32 = crc32stream.getCrc32();
     int expectedBodyCrc32 = crc32stream.readBytes(4);
@@ -285,6 +256,9 @@ public class Gzip {
       throw new IOException("CRC check failed.");
     }
     int isize = crc32stream.readBytes(4);
+    if ((stream.getOutputSize() & 0xFFFFFFFF) != isize) {
+      throw new IOException("Size mismatches.");
+    }
     return gzip;
   }
 

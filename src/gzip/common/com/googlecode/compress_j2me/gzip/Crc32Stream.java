@@ -32,7 +32,6 @@ package com.googlecode.compress_j2me.gzip;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 class Crc32Stream {
 
@@ -54,21 +53,22 @@ class Crc32Stream {
   }
 
   private InputStream in;
-  private OutputStream out;
+  //private OutputStream out;
 
   private int rawCrc32 = 0 ^ 0xFFFFFFFF;
 
   private int bitBuffer;
   private int bitOffset;
-  private int outputSize;
+
+  //private int outputSize;
 
   Crc32Stream(InputStream input) {
     this.in = input;
   }
 
-  Crc32Stream(OutputStream output) {
-    this.out = output;
-  }
+  //  Crc32Stream(OutputStream output) {
+  //    this.out = output;
+  //  }
 
   void resetCrc32() {
     this.rawCrc32 = 0 ^ 0xFFFFFFFF;
