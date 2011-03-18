@@ -37,7 +37,7 @@ import java.io.IOException;
 
 import junit.framework.Assert;
 
-public class TestUtil {
+public class UnitTest {
 
   public static ByteArrayInputStream s2in(String content) {
     return new ByteArrayInputStream(s2b(content));
