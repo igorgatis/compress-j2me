@@ -52,8 +52,6 @@ class Huffman {
         // Child exists.
         idx = child_content;
       } else {
-        System.out.println(nodeLabel(child_content));
-        TreeNode.printCodes(tree);
         throw new RuntimeException("Invalid tree");
       }
     }
@@ -75,9 +73,9 @@ class Huffman {
       }
     }
     if (symbolCount == 0) {
-      System.out.println();
+      throw new RuntimeException("Not implemented.");
     } else if (symbolCount == 1) {
-      System.out.println();
+      throw new RuntimeException("Not implemented.");
     }
     // Step 2: Find the numerical value of the smallest code for each code length.
     char[] next_code = new char[bl_count.length + 1];
@@ -100,13 +98,10 @@ class Huffman {
         }
         next_code[len]++;
         nodeCount = appendChild(tree, nodeCount, path, len, n);
-        //System.out.println("=================");
-        //TreeNode.printTree(tree, 0);
       }
     }
     // Shrinks tree if occupations is below 80%.
     if ((nodeCount / (double) tree.length) < 0.8) {
-      //System.out.println(tree.length + "=>" + nodeCount);
       int[] shorter_tree = new int[nodeCount];
       System.arraycopy(tree, 0, shorter_tree, 0, nodeCount);
       tree = shorter_tree;
@@ -213,7 +208,7 @@ class Huffman {
     char[] lengths = new char[size];
     for (int i = 0; i < lengths.length;) {
       int code = Huffman.decodeSymbol(in, hcTree);
-      int toCopy = lengths[0];
+      int toCopy = 0;
       int repeat = 0;
       switch (code) {
       case 16:
@@ -236,5 +231,4 @@ class Huffman {
     }
     return lengths;
   }
-
 }

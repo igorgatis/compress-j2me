@@ -84,6 +84,25 @@ public class UnitTest {
     out.flush();
   }
 
+  static void pump(final ZStream in, OutputStream out) throws IOException {
+    pump(new InputStream() {
+      @Override
+      public int read() throws IOException {
+        return in.read();
+      }
+    }, out);
+  }
+
+  static void pump(InputStream in, final ZStream out) throws IOException {
+    pump(in, new OutputStream() {
+
+      @Override
+      public void write(int b) throws IOException {
+        out.write(b);
+      }
+    });
+  }
+
   public static final byte[] s2b(String content) {
     byte[] data = new byte[content.length()];
     for (int i = 0; i < data.length; i++) {
