@@ -1,9 +1,11 @@
 package com.googlecode.compress_j2me.gzip;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import junit.framework.Assert;
 
+import org.bolet.jgz.GZipInputStream;
 import org.junit.Test;
 
 public class HuffmanTest extends UnitTest {
@@ -108,15 +110,25 @@ public class HuffmanTest extends UnitTest {
     Assert.assertEquals(144, Huffman.decodeSymbol(in, tree));
     in = new ZStream(h2in("FF01"));
     Assert.assertEquals(255, Huffman.decodeSymbol(in, tree));
-    
+
     in = new ZStream(h2in("00"));
     Assert.assertEquals(256, Huffman.decodeSymbol(in, tree));
     in = new ZStream(h2in("74"));
     Assert.assertEquals(279, Huffman.decodeSymbol(in, tree));
-    
+
     in = new ZStream(h2in("30"));
     Assert.assertEquals(280, Huffman.decodeSymbol(in, tree));
     in = new ZStream(h2in("E3"));
     Assert.assertEquals(287, Huffman.decodeSymbol(in, tree));
+  }
+
+  @Test
+  public void testReadLengths() throws IOException {
+    String dynamicHuffman = "9C7D075814BDF6F72C4D44C005115151972222366C887D29"
+        + "2AA2E262EFAE9D62C1DE75414444D4B57745EC1D3B2AEADAB1AFBD2BF6AED8BB";
+    //pump(new GZipInputStream(h2in(dynamicHuffman)), new ByteArrayOutputStream());
+    
+    
+    //ZStream in = new ZStream(h2in(dynamicHuffman));
   }
 }

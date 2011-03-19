@@ -19,7 +19,7 @@ public class TreeNode {
   }
 
   private static void printTree(int[] tree, int idx, String prefix) {
-    int value = Huffman.getValue(idx);
+    int value = Huffman.nodeLabel(idx);
     if (value >= 0) {
       System.out.println(prefix + "(" + value + ")");
       return;
@@ -40,7 +40,7 @@ public class TreeNode {
 
   private static StringBuffer treeToString(int[] tree, int idx,
       StringBuffer buffer) {
-    int value = Huffman.getValue(idx);
+    int value = Huffman.nodeLabel(idx);
     if (value >= 0) {
       buffer.append(value);
       return buffer;
@@ -75,7 +75,7 @@ public class TreeNode {
 
   private static void printCodes(int[] tree, int idx, String prefix,
       String[] labels) {
-    int value = Huffman.getValue(idx);
+    int value = Huffman.nodeLabel(idx);
     if (value >= 0) {
       StringBuffer buffer = new StringBuffer(2 * prefix.length());
       for (int i = 0; i < prefix.length(); i++) {
@@ -106,7 +106,7 @@ public class TreeNode {
   }
 
   private static int pointer(int[] tree, int idx, int reservedPath) {
-    int value = Huffman.getValue(idx);
+    int value = Huffman.nodeLabel(idx);
     if (value >= 0) {
       return value;
     }

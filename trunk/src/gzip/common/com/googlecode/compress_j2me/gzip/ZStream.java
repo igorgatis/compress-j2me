@@ -86,14 +86,14 @@ class ZStream {
   }
 
   void write(int ch) throws IOException {
-    this.out.write(ch);
+    this.out.write(0xFF & ch);
     this.outputSize++;
     if (this.keepCrc && ch >= 0) {
       updateCrc((byte) ch);
     }
     if (this.hasCircularBuffer) {
-      this.bufferOffset = (this.bufferOffset + 1) & this.bufferMask;
       this.circularBuffer[this.bufferOffset] = (byte) ch;
+      this.bufferOffset = (this.bufferOffset + 1) & this.bufferMask;
       if (this.bufferSize < this.circularBuffer.length) {
         this.bufferSize++;
       }
@@ -102,15 +102,15 @@ class ZStream {
 
   void copyFromEnd(int distance, int length) throws IOException {
     if (!this.hasCircularBuffer) {
-      throw new IOException("buffer unaveilable");
+      throw new IOException("buffer unavailable");
     }
     if (distance > this.bufferSize) {
       throw new IOException("invalid distance");
     }
-    int start = this.bufferSize - distance;
-    int localOffset = (this.bufferOffset + start) & this.bufferMask;
+    int start = this.bufferOffset - distance;
+    start = (start + this.circularBuffer.length) & this.bufferMask;
     for (int i = 0; i < length; i++) {
-      int idx = (localOffset + i) & this.bufferMask;
+      int idx = (start + i) & this.bufferMask;
       write(this.circularBuffer[idx]);
     }
   }

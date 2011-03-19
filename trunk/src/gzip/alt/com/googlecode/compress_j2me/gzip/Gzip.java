@@ -68,7 +68,6 @@ public class Gzip {
       if (litLenCode < Huffman.END_OF_BLOCK_CODE) {
         out.write(litLenCode);
       } else {
-        litLenCode -= (Huffman.END_OF_BLOCK_CODE + 1);
         int length = Huffman.literalLength(litLenCode, in);
         int distCode = Huffman.decodeSymbol(in, distTree);
         int distance = Huffman.literalDistance(distCode, in);
