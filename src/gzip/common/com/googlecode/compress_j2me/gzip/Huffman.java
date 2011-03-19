@@ -7,12 +7,12 @@ class Huffman {
   //private static final int RIGHT_CHILD_OFFSET = 0;
   private static final int LEFT_CHILD_OFFSET = 16;
   private static final int CHILD_CONTENT_MASK = 0xFFFF;
-  private static final int MAX_CHILD_INDEX = 1 << 13;
+  private static final int MAX_CHILD_INDEX = 1 << 15;
 
   public static final int MAX_POINTER_INDEX = CHILD_CONTENT_MASK
       - MAX_CHILD_INDEX;
 
-  public static int getValue(int node) {
+  public static int nodeLabel(int node) {
     if (node >= MAX_CHILD_INDEX) {
       return node - MAX_CHILD_INDEX;
     }
@@ -52,6 +52,8 @@ class Huffman {
         // Child exists.
         idx = child_content;
       } else {
+        System.out.println(nodeLabel(child_content));
+        TreeNode.printCodes(tree);
         throw new RuntimeException("Invalid tree");
       }
     }
@@ -63,12 +65,19 @@ class Huffman {
       throw new RuntimeException("Too many leaves: " + node_len.length);
     }
     // Step 1: Count the number of codes for each code length.
+    int symbolCount = 0;
     char[] bl_count = new char[maxBits + 1];
     for (int n = 0; n < node_len.length; n++) {
       int len = node_len[n];
       if (len > 0) {
         bl_count[len]++;
+        symbolCount++;
       }
+    }
+    if (symbolCount == 0) {
+      System.out.println();
+    } else if (symbolCount == 1) {
+      System.out.println();
     }
     // Step 2: Find the numerical value of the smallest code for each code length.
     char[] next_code = new char[bl_count.length + 1];
@@ -86,6 +95,9 @@ class Huffman {
       int len = node_len[n];
       if (len > 0) {
         int path = next_code[len];
+        if (path > ((1 << len) - 1)) {
+          throw new RuntimeException("Invalid symbol");
+        }
         next_code[len]++;
         nodeCount = appendChild(tree, nodeCount, path, len, n);
         //System.out.println("=================");
@@ -110,7 +122,7 @@ class Huffman {
         child_offset = LEFT_CHILD_OFFSET;
       }
       int child_content = (tree[node] >>> child_offset) & CHILD_CONTENT_MASK;
-      int value = getValue(child_content);
+      int value = nodeLabel(child_content);
       if (value >= 0) {
         return value;
       }
@@ -134,6 +146,7 @@ class Huffman {
       0x863, 0x873, 0xA83, 0xAA3, 0xAC3, 0xAE3, 0x102 };
 
   static int literalLength(int litCode, ZStream in) throws IOException {
+    litCode -= Huffman.END_OF_BLOCK_CODE + 1;
     int codedLength = LITERALS_LENGTHS[litCode];
     int length = codedLength & _LIT_LEN_MASK;
     int extraBits = codedLength >>> _LIT_LEN_EXTRA_OFFSET;
@@ -144,7 +157,7 @@ class Huffman {
   }
 
   // 0xF0=distance, 0x0F=extra bits.
-  private static final int _LIT_DIST_EXTRA_OFFSET = 9;
+  private static final int _LIT_DIST_EXTRA_OFFSET = 16;
   private static final int _LIT_DIST_MASK = 0xFFFF;
   private static final int[] LITERALS_DISTANCES = new int[] { //
       0x01, 0x02, 0x03, 0x04, 0x10005, 0x10007, 0x20009, 0x2000D, 0x30011,
@@ -198,9 +211,9 @@ class Huffman {
   static char[] readLengths(ZStream in, int[] hcTree, int size)
       throws IOException {
     char[] lengths = new char[size];
-    for (int i = 0; i < lengths.length; i++) {
+    for (int i = 0; i < lengths.length;) {
       int code = Huffman.decodeSymbol(in, hcTree);
-      int toCopy = 0;
+      int toCopy = lengths[0];
       int repeat = 0;
       switch (code) {
       case 16:
@@ -208,19 +221,17 @@ class Huffman {
         repeat = 3 + in.readBits(2);
         break;
       case 17:
-        toCopy = lengths[0];
         repeat = 3 + in.readBits(3);
         break;
       case 18:
-        toCopy = lengths[0];
         repeat = 11 + in.readBits(3);
         break;
       default:
-        lengths[i] = (char) code;
+        lengths[i++] = (char) code;
         continue;
       }
-      for (; repeat > 0 && i < lengths.length; i++) {
-        lengths[i] = (char) toCopy;
+      for (; repeat > 0 && i < lengths.length; repeat--) {
+        lengths[i++] = (char) toCopy;
       }
     }
     return lengths;
