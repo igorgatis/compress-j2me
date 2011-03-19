@@ -93,7 +93,7 @@ public class Gzip {
     inflateHuffman(in, out, litLenTree, distTree);
   }
 
-  private static int inflate(ZStream in, ZStream out) throws IOException {
+  private static long inflate(ZStream in, ZStream out) throws IOException {
     boolean finalBlock = false;
     do {
       finalBlock = in.readBits(1) != 0;
@@ -115,10 +115,11 @@ public class Gzip {
         throw new IOException("Invalid block.");
       }
     } while (!finalBlock);
-    return -1;
+    in.alignBytes();
+    return out.getOutputSize();
   }
 
-  public static int inflate(InputStream in, OutputStream out)
+  public static long inflate(InputStream in, OutputStream out)
       throws IOException {
     ZStream outStream = new ZStream(out, true, DEFAULT_WINDOW_BITS);
     return inflate(new ZStream(in, false, 0), outStream);
@@ -164,8 +165,9 @@ public class Gzip {
   }
 
   private static void readFooter(ZStream in, ZStream out) throws IOException {
-    // Read footer.
-    if (out.getCrc() != in.readLittleEndian(4)) {
+    int actualCrc = out.getCrc();
+    int expectedCrc = in.readLittleEndian(4);
+    if (expectedCrc != actualCrc) {
       throw new IOException("CRC check failed.");
     }
     if ((out.getOutputSize() & 0xFFFFFFFF) != in.readLittleEndian(4)) {

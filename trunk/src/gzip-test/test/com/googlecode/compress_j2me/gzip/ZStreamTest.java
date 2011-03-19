@@ -39,6 +39,12 @@ import org.junit.Test;
 
 public class ZStreamTest extends UnitTest {
 
+  private AssertiveOutputStream baos;
+
+  //---------------------------------------------------------------------------
+  // CRC Tests
+  //---------------------------------------------------------------------------
+
   private static final int[] CRC_TABLE = new int[] {
       0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F,
       0xE963A535, 0x9E6495A3, 0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988,
@@ -140,6 +146,23 @@ public class ZStreamTest extends UnitTest {
   }
 
   @Test
+  public void testBashCrc() throws IOException {
+    ZStream in = new ZStream(file2in("samples/bash"), true, 0);
+    pump(in, baos = file2out("samples/bash"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0x617556D0, in.getCrc());
+
+    ZStream out = new ZStream(baos = file2out("samples/bash"), true, 0);
+    pump(file2in("samples/bash"), out);
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0x617556D0, out.getCrc());
+  }
+
+  //---------------------------------------------------------------------------
+  // Input Stream Tests
+  //---------------------------------------------------------------------------
+
+  @Test
   public void testReadLitleEndian() throws IOException {
     ZStream stream = new ZStream(h2in(""));
     Assert.assertEquals(0x00, stream.readLittleEndian(0));
@@ -173,6 +196,10 @@ public class ZStreamTest extends UnitTest {
     stream = new ZStream(h2in("414243000041"));
     Assert.assertEquals("ABC", stream.readZeroTerminatedString());
   }
+
+  //---------------------------------------------------------------------------
+  // Bit Stream Tests
+  //---------------------------------------------------------------------------
 
   private static byte[] toByteStream(int x, int bits) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();

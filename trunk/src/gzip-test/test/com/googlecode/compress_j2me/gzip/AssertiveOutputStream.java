@@ -48,9 +48,10 @@ public class AssertiveOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    int actualByte = 0xFF & b;
     int expectedByte = 0xFF & this.expected[this.offset];
-    if (expectedByte != b) {
-      Assert.assertEquals(expectedByte, b);
+    if (expectedByte != actualByte) {
+      Assert.assertEquals(expectedByte, actualByte);
     }
     this.offset++;
     this.baos.write(b);

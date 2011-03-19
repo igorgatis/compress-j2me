@@ -86,7 +86,7 @@ class ZStream {
   }
 
   void write(int ch) throws IOException {
-    this.out.write(0xFF & ch);
+    this.out.write(ch);
     this.outputSize++;
     if (this.keepCrc && ch >= 0) {
       updateCrc((byte) ch);
@@ -133,12 +133,19 @@ class ZStream {
     this(input, false, 0);
   }
 
-  int read() throws IOException {
+  private int readInternal() throws IOException {
     int ch = this.in.read();
     if (this.keepCrc && ch >= 0) {
       updateCrc((byte) ch);
     }
     return ch;
+  }
+
+  int read() throws IOException {
+    if (this.bitOffset != 0) {
+      throw new IOException("Unaligned byte");
+    }
+    return readInternal();
   }
 
   int read(byte[] buffer, int start, int length) throws IOException {
@@ -190,10 +197,14 @@ class ZStream {
 
   private int bitBuffer;
   private int bitOffset;
+  
+  void alignBytes() throws IOException {
+    readBits(this.bitOffset);
+  }
 
   int readBits(int numBits) throws IOException {
     while (this.bitOffset < numBits) {
-      int tmp = read();
+      int tmp = readInternal();
       if (tmp < 0) {
         checkNoEOF(tmp);
         //return -1;
