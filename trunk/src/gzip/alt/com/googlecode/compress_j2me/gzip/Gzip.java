@@ -100,7 +100,7 @@ public class Gzip {
       int blockType = in.readBits(2);
       switch (blockType) {
       case BTYPE_NO_COMPRESSION:
-        in.readBits(5); // Discard the rest of header.
+        in.alignBytes(); // Discard the rest of header.
         inflateRawBlock(in, out);
         break;
       case BTYPE_STATIC_HUFFMAN:

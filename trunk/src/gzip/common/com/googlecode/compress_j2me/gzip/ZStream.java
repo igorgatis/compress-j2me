@@ -85,10 +85,10 @@ class ZStream {
     return outputSize;
   }
 
-  void write(int ch) throws IOException {
+  private void writeInternal(int ch) throws IOException {
     this.out.write(ch);
     this.outputSize++;
-    if (this.keepCrc && ch >= 0) {
+    if (this.keepCrc) {
       updateCrc((byte) ch);
     }
     if (this.hasCircularBuffer) {
@@ -98,6 +98,13 @@ class ZStream {
         this.bufferSize++;
       }
     }
+  }
+
+  void write(int ch) throws IOException {
+    if (this.unaligned) {
+      throw new IOException("Unaligned byte");
+    }
+    writeInternal(ch);
   }
 
   void copyFromEnd(int distance, int length) throws IOException {
@@ -142,7 +149,7 @@ class ZStream {
   }
 
   int read() throws IOException {
-    if (this.bitOffset != 0) {
+    if (this.unaligned) {
       throw new IOException("Unaligned byte");
     }
     return readInternal();
@@ -173,7 +180,7 @@ class ZStream {
       throw new IOException("Unexpected EOF.");
     }
   }
-  
+
   void skipBytes(int n) throws IOException {
     while (n-- > 0) {
       int ch = read();
@@ -195,14 +202,17 @@ class ZStream {
   // Bit stream feature.
   //---------------------------------------------------------------------------
 
+  private boolean unaligned;
   private int bitBuffer;
   private int bitOffset;
-  
+
   void alignBytes() throws IOException {
     readBits(this.bitOffset);
+    this.unaligned = false;
   }
 
   int readBits(int numBits) throws IOException {
+    this.unaligned = true;
     while (this.bitOffset < numBits) {
       int tmp = readInternal();
       if (tmp < 0) {
@@ -221,9 +231,7 @@ class ZStream {
   }
 
   void writeBits(int ch, int numBits) throws IOException {
-    if (this.out == null) {
-      throw new IOException("Not a output stream");
-    }
+    this.unaligned = true;
     //System.err.println(numBits + ":" + code);
     int mask = (1 << numBits) - 1;
     this.bitBuffer |= (mask & ch) << this.bitOffset;
@@ -238,15 +246,13 @@ class ZStream {
   }
 
   void end() throws IOException {
-    if (this.out == null) {
-      throw new IOException("Not a output stream");
-    }
     while (this.bitOffset > 0) {
-      write((byte) this.bitBuffer);
+      writeInternal(0xFF & this.bitBuffer);
       this.outputSize++;
       this.bitBuffer >>>= 8;
       this.bitOffset -= 8;
     }
+    this.unaligned = false;
     flush();
   }
 }

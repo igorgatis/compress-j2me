@@ -146,7 +146,34 @@ public class ZStreamTest extends UnitTest {
   }
 
   @Test
-  public void testBashCrc() throws IOException {
+  public void testCrcA() throws IOException {
+    ZStream in = new ZStream(file2in("samples/a"), true, 0);
+    pump(in, baos = file2out("samples/a"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0xE8B7BE43, in.getCrc());
+
+    ZStream out = new ZStream(baos = file2out("samples/a"), true, 0);
+    pump(file2in("samples/a"), out);
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0xE8B7BE43, out.getCrc());
+  }
+
+  @Test
+  public void testCrcGoogleLogoPng() throws IOException {
+    ZStream in = new ZStream(file2in("samples/google_logo.png"), true, 0);
+    pump(in, baos = file2out("samples/google_logo.png"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0x90C94C70, in.getCrc());
+
+    ZStream out = new ZStream(baos = file2out("samples/google_logo.png"), true,
+        0);
+    pump(file2in("samples/google_logo.png"), out);
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(0x90C94C70, out.getCrc());
+  }
+
+  @Test
+  public void testCrcBash() throws IOException {
     ZStream in = new ZStream(file2in("samples/bash"), true, 0);
     pump(in, baos = file2out("samples/bash"));
     Assert.assertEquals(baos.expectedSize(), baos.size());
