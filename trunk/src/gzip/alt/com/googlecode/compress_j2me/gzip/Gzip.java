@@ -36,15 +36,6 @@ import java.io.OutputStream;
 
 public class Gzip {
 
-  public static final int GZIP_MAGIC_NUMBER = 0x8B1F;
-  //private static final byte FTEXT = 0x01;
-  private static final byte FHCRC = 0x02;
-  private static final byte FEXTRA = 0x04;
-  private static final byte FNAME = 0x08;
-  private static final byte FCOMMENT = 0x10;
-  //private static final byte FRESERVED = (byte) 0xE0;
-  private static final byte CM_DEFLATE = 8;
-
   private String filename;
   private String comment;
 
@@ -73,7 +64,12 @@ public class Gzip {
   private static final byte BTYPE_DYNAMIC_HUFFMAN = 0x02;
   private static final byte BTYPE_RESERVED = 0x03;
 
-  private static final int DEFAULT_WINDOW_BITS = 15;
+  private static final int INFLATE_WINDOW_BITS = 15;
+
+  static final int DEFLATE_HASH_SIZE = 1 << 11;
+  private static final int DEFLATE_WINDOW_BITS = 11;
+  static final int MAX_DEFLATE_DISTANCE = 1 << DEFLATE_WINDOW_BITS;
+  static final int MAX_DEFLATE_LENGTH = 256;
 
   private static void inflateRawBlock(ZStream in, ZStream out)
       throws IOException {
@@ -101,9 +97,9 @@ public class Gzip {
         if (distTree == null) {
           throw new IOException("no distance tree");
         }
-        int length = Huffman.literalLength(litLenCode, in);
+        int length = Huffman.decodeLength(litLenCode, in);
         int distCode = Huffman.decodeSymbol(in, distTree);
-        int distance = Huffman.literalDistance(distCode, in);
+        int distance = Huffman.decodeDistance(distCode, in);
         out.copyFromEnd(distance, length);
       }
     }
@@ -164,8 +160,52 @@ public class Gzip {
 
   public static long inflate(InputStream in, OutputStream out)
       throws IOException {
-    ZStream outStream = new ZStream(out, true, DEFAULT_WINDOW_BITS);
+    ZStream outStream = new ZStream(out, true, INFLATE_WINDOW_BITS);
     return inflate(new ZStream(in, false, 0), outStream);
+  }
+
+  private static long simpleDeflate(ZStream in, ZStream out) throws IOException {
+    out.writeBits(1, 1); // This is a final block.
+    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
+
+    Hash hash = new Hash(1 << DEFLATE_HASH_SIZE);
+    byte[] buffer = new byte[MAX_DEFLATE_LENGTH];
+    int inputOffset = 0;
+    int marker = -1;
+    int length = 0;
+    int bufferSize;
+    short prefixCode = -1;
+    while ((bufferSize = in.read(buffer, 0, buffer.length)) > 0) {
+      for (int i = 0; i < bufferSize; i++, inputOffset++) {
+        int ch = 0xFF & buffer[i];
+        int distance = (int) (inputOffset - marker);
+        if (marker >= 0 && distance < MAX_DEFLATE_DISTANCE && //
+            length < MAX_DEFLATE_LENGTH && //
+            ch == in.byteAt(distance + length)) {
+          length++;
+          if (length < 3) {
+            prefixCode = hash.put(prefixCode, (byte) ch, inputOffset);
+          }
+        } else {
+          if (length > 1) {
+            Huffman.encodeLength(length, out);
+            Huffman.encodeDistance(distance, out);
+          } else {
+            Huffman.encodeLiteral(ch, out);
+          }
+          marker = hash.get(buffer, i + 1, bufferSize - i - 1);
+          prefixCode = -1;
+          length = 0;
+        }
+      }
+    }
+    return out.getOutputSize();
+  }
+
+  public static long deflate(InputStream in, OutputStream out)
+      throws IOException {
+    ZStream inStream = new ZStream(in, true, INFLATE_WINDOW_BITS);
+    return simpleDeflate(inStream, new ZStream(out, false, 0));
   }
 
   //---------------------------------------------------------------------------
@@ -175,28 +215,28 @@ public class Gzip {
   private static Gzip readHeader(ZStream in) throws IOException {
     Gzip gzip = new Gzip();
     in.resetCrc();
-    if (in.readLittleEndian(2) != GZIP_MAGIC_NUMBER) {
+    if (in.readLittleEndian(2) != ZStream.GZIP_MAGIC_NUMBER) {
       throw new IOException("Bad magic number");
     }
-    if (in.readLittleEndian(1) != CM_DEFLATE) {
+    if (in.readLittleEndian(1) != ZStream.CM_DEFLATE) {
       throw new IOException("Unsupported compression method");
     }
     int flg = in.readLittleEndian(1);
     // mtime=4, xfl=1, os=1
     in.skipBytes(6);
-    if ((flg & FEXTRA) != 0) {
+    if ((flg & ZStream.FEXTRA) != 0) {
       int xlen = in.readLittleEndian(2);
       while (xlen-- > 0) {
         in.read();
       }
     }
-    if ((flg & FNAME) != 0) {
+    if ((flg & ZStream.FNAME) != 0) {
       gzip.filename = in.readZeroTerminatedString();
     }
-    if ((flg & FCOMMENT) != 0) {
+    if ((flg & ZStream.FCOMMENT) != 0) {
       gzip.comment = in.readZeroTerminatedString();
     }
-    if ((flg & FHCRC) != 0) {
+    if ((flg & ZStream.FHCRC) != 0) {
       int headerCrc16 = in.getCrc() & 0xFFFF;
       int expectedHeaderCrc16 = in.readLittleEndian(2);
       if (expectedHeaderCrc16 != headerCrc16) {
@@ -229,6 +269,6 @@ public class Gzip {
   public static Gzip gunzip(InputStream in, OutputStream out)
       throws IOException {
     return gunzip(new ZStream(in, false, 0), new ZStream(out, true,
-        DEFAULT_WINDOW_BITS));
+        INFLATE_WINDOW_BITS));
   }
 }
