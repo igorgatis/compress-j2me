@@ -63,7 +63,7 @@ public class HuffmanTest extends UnitTest {
 
   @Test
   public void testFixedLiteralsTree() {
-    int[] tree = Huffman.FIXED_LITERALS_TREE;
+    int[] tree = Huffman.CANONICAL_LITLENS_TREE;
     Assert.assertEquals(0, TreeNode.pointer(tree, rpath(0x30, 8)));
     Assert.assertEquals(143, TreeNode.pointer(tree, rpath(0xBF, 8)));
     Assert.assertEquals(144, TreeNode.pointer(tree, rpath(0x190, 9)));
@@ -89,7 +89,7 @@ public class HuffmanTest extends UnitTest {
 
   @Test
   public void testFixedAlphabetLengthsTree() {
-    int[] tree = Huffman.FIXED_ALPHABET_LENGTHS_TREE;
+    int[] tree = Huffman.CANONICAL_DISTANCES_TREE;
     for (int i = 0; i <= 18; i++) {
       int rpath = HuffmanTest.rpath(i, 5);
       Assert.assertEquals("i=" + i, i, TreeNode.pointer(tree, rpath));
@@ -98,7 +98,7 @@ public class HuffmanTest extends UnitTest {
 
   @Test
   public void testDecodeSymbol() throws IOException {
-    int[] tree = Huffman.FIXED_LITERALS_TREE;
+    int[] tree = Huffman.CANONICAL_LITLENS_TREE;
     ZStream in = new ZStream(h2in("0C"));
     Assert.assertEquals(0, Huffman.decodeSymbol(in, tree));
     in = new ZStream(h2in("FD"));
