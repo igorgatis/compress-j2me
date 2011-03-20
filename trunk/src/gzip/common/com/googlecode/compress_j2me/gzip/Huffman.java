@@ -63,19 +63,12 @@ class Huffman {
       throw new RuntimeException("Too many leaves: " + node_len.length);
     }
     // Step 1: Count the number of codes for each code length.
-    int symbolCount = 0;
     char[] bl_count = new char[maxBits + 1];
     for (int n = 0; n < node_len.length; n++) {
       int len = node_len[n];
       if (len > 0) {
         bl_count[len]++;
-        symbolCount++;
       }
-    }
-    if (symbolCount == 0) {
-      throw new RuntimeException("Not implemented.");
-    } else if (symbolCount == 1) {
-      throw new RuntimeException("Not implemented.");
     }
     // Step 2: Find the numerical value of the smallest code for each code length.
     char[] next_code = new char[bl_count.length + 1];
@@ -170,7 +163,7 @@ class Huffman {
     return distance;
   }
 
-  static final int[] FIXED_LITERALS_TREE;
+  static final int[] CANONICAL_LITLENS_TREE;
   static {
     char[] node_len = new char[288];
     int i = 0;
@@ -186,19 +179,19 @@ class Huffman {
     while (i < node_len.length) {
       node_len[i++] = 8;
     }
-    FIXED_LITERALS_TREE = Huffman.buildCodeTree(9, node_len);
+    CANONICAL_LITLENS_TREE = Huffman.buildCodeTree(9, node_len);
   }
 
-  static final int[] FIXED_ALPHABET_LENGTHS_TREE;
+  static final int[] CANONICAL_DISTANCES_TREE;
   static {
     char[] node_len = new char[19];
     for (int i = 0; i < node_len.length; i++) {
       node_len[i] = 5;
     }
-    FIXED_ALPHABET_LENGTHS_TREE = Huffman.buildCodeTree(5, node_len);
+    CANONICAL_DISTANCES_TREE = Huffman.buildCodeTree(5, node_len);
   }
 
-  static final byte[] HUFF2PERM = { //
+  static final byte[] HC_PERM = { //
       16, 17, 18, 0, 8, 7, 9, 6, 10, 5, //
       11, 4, 12, 3, 13, 2, 14, 1, 15 //
   };

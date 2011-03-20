@@ -77,6 +77,17 @@ public class GzipTest extends UnitTest {
   }
 
   @Test
+  public void testGunzipAx10() throws IOException {
+    pump(new GZipInputStream(file2in("samples/Ax10.txt.gz")),
+        baos = file2out("samples/Ax10.txt"));
+    Gzip gzip = Gzip.gunzip(file2in("samples/Ax10.txt.gz"),
+        baos = file2out("samples/Ax10.txt"));
+    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Assert.assertEquals(null, gzip.getFilename());
+    Assert.assertEquals(null, gzip.getComment());
+  }
+
+  @Test
   public void testGunzipHelloWorldFile() throws IOException {
     Gzip gzip = Gzip.gunzip(file2in("samples/helloworld.txt.gz"),
         baos = file2out("samples/helloworld.txt"));

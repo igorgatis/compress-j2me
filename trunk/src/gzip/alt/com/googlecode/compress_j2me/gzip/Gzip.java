@@ -68,6 +68,9 @@ public class Gzip {
       if (litLenCode < Huffman.END_OF_BLOCK_CODE) {
         out.write(litLenCode);
       } else {
+        if (distTree == null) {
+          throw new IOException("no distance tree");
+        }
         int length = Huffman.literalLength(litLenCode, in);
         int distCode = Huffman.decodeSymbol(in, distTree);
         int distance = Huffman.literalDistance(distCode, in);
@@ -81,15 +84,25 @@ public class Gzip {
     int hlit = in.readBits(5) + 257;
     int hdist = in.readBits(5) + 1;
     int hclen = in.readBits(4) + 4;
-    char[] h2CodeLen = new char[19];
+
+    // Build tree which will be used to decode lengths for nodes of
+    // literal/length and distance trees.
+    // Will read 4-19 items. Each item ranges from 0 to 7 (3 bits).
+    char[] hcLengths = new char[19];
     for (int i = 0; i < hclen; i++) {
-      h2CodeLen[Huffman.HUFF2PERM[i]] = (char) in.readBits(3);
+      hcLengths[Huffman.HC_PERM[i]] = (char) in.readBits(3);
     }
-    int[] hcTree = Huffman.buildCodeTree(7, h2CodeLen);
-    char[] litCodeLen = Huffman.readLengths(in, hcTree, hlit);
-    char[] distCodeLen = Huffman.readLengths(in, hcTree, hdist);
-    int[] litLenTree = Huffman.buildCodeTree(15, litCodeLen);
-    int[] distTree = Huffman.buildCodeTree(15, distCodeLen);
+    int[] hcTree = Huffman.buildCodeTree(7, hcLengths);
+
+    char[] litCodeLens = Huffman.readLengths(in, hcTree, hlit);
+    int[] litLenTree = Huffman.buildCodeTree(15, litCodeLens);
+
+    char[] distCodeLens = Huffman.readLengths(in, hcTree, hdist);
+    int[] distTree = null;
+    // Check corner case where there are only literals and no lengths.
+    if (distCodeLens.length != 1 || distCodeLens[0] != 0) {
+      distTree = Huffman.buildCodeTree(15, distCodeLens);
+    }
     inflateHuffman(in, out, litLenTree, distTree);
   }
 
@@ -104,8 +117,8 @@ public class Gzip {
         inflateRawBlock(in, out);
         break;
       case BTYPE_STATIC_HUFFMAN:
-        inflateHuffman(in, out, Huffman.FIXED_LITERALS_TREE,
-            Huffman.FIXED_ALPHABET_LENGTHS_TREE);
+        inflateHuffman(in, out, Huffman.CANONICAL_LITLENS_TREE,
+            Huffman.CANONICAL_DISTANCES_TREE);
         break;
       case BTYPE_DYNAMIC_HUFFMAN:
         inflateDynamicHuffman(in, out);
