@@ -36,6 +36,15 @@ import java.io.OutputStream;
 
 class ZStream {
 
+  static final int GZIP_MAGIC_NUMBER = 0x8B1F;
+  //private static final byte FTEXT = 0x01;
+  static final byte FHCRC = 0x02;
+  static final byte FEXTRA = 0x04;
+  static final byte FNAME = 0x08;
+  static final byte FCOMMENT = 0x10;
+  //private static final byte FRESERVED = (byte) 0xE0;
+  static final byte CM_DEFLATE = 8;
+
   //---------------------------------------------------------------------------
   // Circular buffer feature.
   //---------------------------------------------------------------------------
@@ -50,11 +59,9 @@ class ZStream {
     this.keepCrc = keepCrc;
     if (bitsCircularBuffer > 0) {
       this.hasCircularBuffer = true;
-    } else {
-      bitsCircularBuffer = 8;
+      this.bufferMask = (1 << bitsCircularBuffer) - 1;
+      this.circularBuffer = new byte[1 << bitsCircularBuffer];
     }
-    this.bufferMask = (1 << bitsCircularBuffer) - 1;
-    this.circularBuffer = new byte[1 << bitsCircularBuffer];
   }
 
   //---------------------------------------------------------------------------
@@ -115,6 +122,18 @@ class ZStream {
     return outputSize;
   }
 
+  public int byteAt(int distance) {
+    if (!this.hasCircularBuffer) {
+      throw new RuntimeException("buffer unavailable");
+    }
+    if (distance > this.bufferSize) {
+      throw new RuntimeException("invalid distance");
+    }
+    int idx = this.bufferOffset - distance;
+    idx = (idx + this.circularBuffer.length) & this.bufferMask;
+    return this.circularBuffer[idx];
+  }
+
   private void writeInternal(int ch) throws IOException {
     this.out.write(ch);
     this.outputSize++;
@@ -132,17 +151,17 @@ class ZStream {
 
   void write(int ch) throws IOException {
     if (this.unaligned) {
-      throw new IOException("Unaligned byte");
+      throw new RuntimeException("Unaligned byte");
     }
     writeInternal(ch);
   }
 
   void copyFromEnd(int distance, int length) throws IOException {
     if (!this.hasCircularBuffer) {
-      throw new IOException("buffer unavailable");
+      throw new RuntimeException("buffer unavailable");
     }
     if (distance > this.bufferSize) {
-      throw new IOException("invalid distance");
+      throw new RuntimeException("invalid distance");
     }
     int start = this.bufferOffset - distance;
     start = (start + this.circularBuffer.length) & this.bufferMask;
@@ -180,7 +199,7 @@ class ZStream {
 
   int read() throws IOException {
     if (this.unaligned) {
-      throw new IOException("Unaligned byte");
+      throw new RuntimeException("Unaligned byte");
     }
     return readInternal();
   }

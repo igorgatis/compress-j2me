@@ -156,18 +156,19 @@ class Huffman {
   static final int END_OF_BLOCK_CODE = 256;
 
   // 0x01FF=length, 0xE000=extra bits.
-  private static final int _LIT_LEN_EXTRA_OFFSET = 9;
-  private static final int _LIT_LEN_MASK = 0x1FF;
-  private static final char[] LITERALS_LENGTHS = new char[] { //
+  private static final int _LITLEN_CHAR_BITS_EXTRA_OFFSET = 9;
+  private static final int _LITLEN_CHAR_BITS_RANGE_START_MASK = 0x1FF;
+  // Could use chars instead, but we want to reuse bsearch().
+  private static final int[] LITLEN_CHAR_BITS = new int[] { //
       0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0x20B, 0x20D, 0x20F, 0x211,
       0x413, 0x417, 0x41B, 0x41F, 0x623, 0x62B, 0x633, 0x63B, 0x843, 0x853,
       0x863, 0x873, 0xA83, 0xAA3, 0xAC3, 0xAE3, 0x102 };
 
-  static int literalLength(int litCode, ZStream in) throws IOException {
-    litCode -= Huffman.END_OF_BLOCK_CODE + 1;
-    int codedLength = LITERALS_LENGTHS[litCode];
-    int length = codedLength & _LIT_LEN_MASK;
-    int extraBits = codedLength >>> _LIT_LEN_EXTRA_OFFSET;
+  static int decodeLength(int litLenCode, ZStream in) throws IOException {
+    litLenCode -= Huffman.END_OF_BLOCK_CODE + 1;
+    int codedLength = LITLEN_CHAR_BITS[litLenCode];
+    int length = codedLength & _LITLEN_CHAR_BITS_RANGE_START_MASK;
+    int extraBits = codedLength >>> _LITLEN_CHAR_BITS_EXTRA_OFFSET;
     if (extraBits > 0) {
       length += in.readBits(extraBits);
     }
@@ -175,18 +176,18 @@ class Huffman {
   }
 
   // 0xF0=distance, 0x0F=extra bits.
-  private static final int _LIT_DIST_EXTRA_OFFSET = 16;
-  private static final int _LIT_DIST_MASK = 0xFFFF;
-  private static final int[] LITERALS_DISTANCES = new int[] { //
+  private static final int _DIST_CHAR_BITS_EXTRA_OFFSET = 16;
+  private static final int _DIST_CHAR_BITS_VALUE_MASK = 0xFFFF;
+  private static final int[] DIST_CHAR_BITS = new int[] { //
       0x01, 0x02, 0x03, 0x04, 0x10005, 0x10007, 0x20009, 0x2000D, 0x30011,
       0x30019, 0x40021, 0x40031, 0x50041, 0x50061, 0x60081, 0x600C1, 0x70101,
       0x70181, 0x80201, 0x80301, 0x90401, 0x90601, 0xA0801, 0xA0C01, 0xB1001,
       0xB1801, 0xC2001, 0xC3001, 0xD4001, 0xD6001, };
 
-  static int literalDistance(int litCode, ZStream in) throws IOException {
-    int codedDistance = LITERALS_DISTANCES[litCode];
-    int distance = codedDistance & _LIT_DIST_MASK;
-    int extraBits = codedDistance >>> _LIT_DIST_EXTRA_OFFSET;
+  static int decodeDistance(int distCode, ZStream in) throws IOException {
+    int codedDistance = DIST_CHAR_BITS[distCode];
+    int distance = codedDistance & _DIST_CHAR_BITS_VALUE_MASK;
+    int extraBits = codedDistance >>> _DIST_CHAR_BITS_EXTRA_OFFSET;
     if (extraBits > 0) {
       distance += in.readBits(extraBits);
     }
@@ -221,10 +222,8 @@ class Huffman {
     CANONICAL_DISTANCES_TREE = Huffman.buildCodeTree(5, node_len);
   }
 
-  static final byte[] HC_PERM = { //
-      16, 17, 18, 0, 8, 7, 9, 6, 10, 5, //
-      11, 4, 12, 3, 13, 2, 14, 1, 15 //
-  };
+  static final byte[] HC_PERM = {
+      16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
   static char[] readLengths(ZStream in, int[] hcTree, int size)
       throws IOException {
@@ -253,5 +252,81 @@ class Huffman {
       }
     }
     return lengths;
+  }
+
+  private static final int _LITERAL_TO_CANONICAL_HUFFMAN_BITS_MASK = 0x01FF;
+  private static final int _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET = 9;
+
+  private static char pathAndNumBitsToChar(int path, int numBits) {
+    return (char) (path | (numBits << _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET));
+  }
+
+  private static final char[] _LITERAL_TO_CANONICAL_HUFFMAN;
+  static {
+    _LITERAL_TO_CANONICAL_HUFFMAN = new char[256];
+    int i;
+    for (i = 0; i < 144; i++) {
+      _LITERAL_TO_CANONICAL_HUFFMAN[i] = pathAndNumBitsToChar(0x30 + i, 8);
+    }
+    for (; i < 256; i++) {
+      _LITERAL_TO_CANONICAL_HUFFMAN[i] = pathAndNumBitsToChar(
+          0x190 + (i - 144), 9);
+    }
+    for (; i < 280; i++) {
+      _LITERAL_TO_CANONICAL_HUFFMAN[i] = pathAndNumBitsToChar(0x00 + (i - 256),
+          7);
+    }
+    for (; i < 287; i++) {
+      _LITERAL_TO_CANONICAL_HUFFMAN[i] = pathAndNumBitsToChar(0xC0 + (i - 280),
+          8);
+    }
+  }
+
+  static void encodeLiteral(int ch, ZStream out) throws IOException {
+    int litLenCode = _LITERAL_TO_CANONICAL_HUFFMAN[ch];
+    int code = litLenCode & _LITERAL_TO_CANONICAL_HUFFMAN_BITS_MASK;
+    int codeNumBits = litLenCode >>> _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET;
+    out.writeBits(code, codeNumBits);
+  }
+
+  private static int bsearch(int key, int[] values, int mask) {
+    int p = 0, q = values.length;
+    while (p < q) {
+      int m = (p + q) / 2;
+      int value = values[m] & mask;
+      if (key == value) {
+        return m;
+      }
+      if (key < value) {
+        q = m - 1;
+      } else {
+        p = m + 1;
+      }
+    }
+    return q;
+  }
+
+  static void encodeLength(int length, ZStream out) throws IOException {
+    int idx = bsearch(length, LITLEN_CHAR_BITS,
+        _LITLEN_CHAR_BITS_RANGE_START_MASK);
+    int litLenCode = _LITERAL_TO_CANONICAL_HUFFMAN[idx];
+    int code = litLenCode & _LITERAL_TO_CANONICAL_HUFFMAN_BITS_MASK;
+    int codeNumBits = litLenCode >>> _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET;
+    out.writeBits(code, codeNumBits);
+    int extra = LITLEN_CHAR_BITS[idx] >>> _LITLEN_CHAR_BITS_EXTRA_OFFSET;
+    if (extra > 0) {
+      length -= LITLEN_CHAR_BITS[idx] & _LITLEN_CHAR_BITS_RANGE_START_MASK;
+      out.writeBits(length, extra);
+    }
+  }
+
+  static void encodeDistance(int distance, ZStream out) throws IOException {
+    int idx = bsearch(distance, DIST_CHAR_BITS, _DIST_CHAR_BITS_VALUE_MASK);
+    out.writeBits(idx, 5);
+    int extra = DIST_CHAR_BITS[idx] >>> _DIST_CHAR_BITS_EXTRA_OFFSET;
+    if (extra > 0) {
+      distance -= DIST_CHAR_BITS[idx] & _DIST_CHAR_BITS_VALUE_MASK;
+      out.writeBits(distance, extra);
+    }
   }
 }
