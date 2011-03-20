@@ -46,4 +46,4 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 1
 fi
 
-${cmd[0]} && ${cmd[1]} && ${cmd[2]}
+echo "${cmd[0]} && ${cmd[1]} && ${cmd[2]}"
