@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class LZWInputStream extends InputStream {
+public class LZCInputStream extends InputStream {
 
   private InputStream in;
 
@@ -44,7 +44,7 @@ public class LZWInputStream extends InputStream {
 
   // LZW stream fields.
   private int max_mask_size;
-  private LZWDict dict;
+  private LZCDict dict;
   private boolean block_mode;
   private ByteBuffer entry;
   private int mask_size;
@@ -52,17 +52,17 @@ public class LZWInputStream extends InputStream {
   private int buffer_read_offset;
   private int code_count;
 
-  public LZWInputStream(InputStream input) {
+  public LZCInputStream(InputStream input) {
     this.in = input;
     entry = new ByteBuffer(128);
     max_mask_size = -1;
-    mask_size = LZWHash.INITIAL_MASK_SIZE;
+    mask_size = LZCHash.INITIAL_MASK_SIZE;
     w_code = -1;
   }
 
   public void setNoHeader() {
     if (max_mask_size < 0) {
-      max_mask_size = LZWHash.MAX_MASK_SIZE;
+      max_mask_size = LZCHash.MAX_MASK_SIZE;
     }
   }
 
@@ -84,16 +84,16 @@ public class LZWInputStream extends InputStream {
 
   private void readHeader() throws IOException {
     int magic = this.in.read() << 8 | this.in.read();
-    if (magic != LZWHash.COMPRESS_MAGIC_NUMBER) {
+    if (magic != LZCHash.COMPRESS_MAGIC_NUMBER) {
       throw new RuntimeException("Bad magic number " + magic);
     }
     int flags = this.in.read();
-    block_mode = (flags & LZWHash.BLOCK_MODE_MASK) != 0;
-    max_mask_size = flags & LZWHash.MAX_MASK_SIZE_MASK;
-    if (max_mask_size > LZWHash.MAX_MASK_SIZE) {
+    block_mode = (flags & LZCHash.BLOCK_MODE_MASK) != 0;
+    max_mask_size = flags & LZCHash.MAX_MASK_SIZE_MASK;
+    if (max_mask_size > LZCHash.MAX_MASK_SIZE) {
       throw new RuntimeException("Cannot handle " + max_mask_size + " bits");
     }
-    dict = new LZWDict(1 << max_mask_size);
+    dict = new LZCDict(1 << max_mask_size);
   }
 
   private int uncompress() throws IOException {
@@ -102,7 +102,7 @@ public class LZWInputStream extends InputStream {
     if (k < 0) {
       return -1;
     }
-    if (k == LZWHash.CLEAR_CODE) {
+    if (k == LZCHash.CLEAR_CODE) {
       // Skips codes to reach end of block.
       for (; block_mode && (code_count % 8 != 0); code_count++) {
         readCode(mask_size);
@@ -110,7 +110,7 @@ public class LZWInputStream extends InputStream {
       dict.reset();
       entry.reset();
       w_code = -1;
-      mask_size = LZWHash.INITIAL_MASK_SIZE;
+      mask_size = LZCHash.INITIAL_MASK_SIZE;
       return 0;
     }
 
@@ -164,7 +164,7 @@ public class LZWInputStream extends InputStream {
 
   public static void uncompress(InputStream in, OutputStream out)
       throws IOException {
-    LZWInputStream lzwIn = new LZWInputStream(in);
+    LZCInputStream lzwIn = new LZCInputStream(in);
     byte[] buffer = new byte[128];
     int bytesRead;
     while ((bytesRead = lzwIn.read(buffer)) >= 0) {

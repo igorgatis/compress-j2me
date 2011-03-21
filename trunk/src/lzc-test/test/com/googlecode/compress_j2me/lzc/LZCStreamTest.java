@@ -38,7 +38,7 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-public class LZWStreamTest extends UnitTest {
+public class LZCStreamTest extends UnitTest {
 
   private static byte[] toByteStream(int x, int bits) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -50,7 +50,7 @@ public class LZWStreamTest extends UnitTest {
 
   private void checkReadBits(byte[] data, int bits, int value, int step)
       throws IOException {
-    LZWStream stream = new LZWStream(new ByteArrayInputStream(data));
+    LZCStream stream = new LZCStream(new ByteArrayInputStream(data));
     for (int j = 0, x = value; j + step < bits; j += step, x >>>= step) {
       int mask = (1 << step) - 1;
       int expected = x & mask;
@@ -63,21 +63,21 @@ public class LZWStreamTest extends UnitTest {
 
   @Test
   public void test_readCode() throws IOException {
-    LZWStream stream = new LZWStream(h2in("5A"));
+    LZCStream stream = new LZCStream(h2in("5A"));
     Assert.assertEquals(0x5A, stream.readCode(8));
-    stream = new LZWStream(h2in("BADC"));
+    stream = new LZCStream(h2in("BADC"));
     Assert.assertEquals(0xA, stream.readCode(4));
     Assert.assertEquals(0xB, stream.readCode(4));
     Assert.assertEquals(0xC, stream.readCode(4));
     Assert.assertEquals(0xD, stream.readCode(4));
-    stream = new LZWStream(h2in("01"));
+    stream = new LZCStream(h2in("01"));
     Assert.assertEquals(0x01, stream.readCode(1));
-    stream = new LZWStream(h2in("0B"));
+    stream = new LZCStream(h2in("0B"));
     Assert.assertEquals(0x01, stream.readCode(1));
     Assert.assertEquals(0x01, stream.readCode(1));
     Assert.assertEquals(0x00, stream.readCode(1));
     Assert.assertEquals(0x01, stream.readCode(1));
-    stream = new LZWStream(h2in("0B"));
+    stream = new LZCStream(h2in("0B"));
     Assert.assertEquals(0x03, stream.readCode(2));
     Assert.assertEquals(0x02, stream.readCode(2));
 

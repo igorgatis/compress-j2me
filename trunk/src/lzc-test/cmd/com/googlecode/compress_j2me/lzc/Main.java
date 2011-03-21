@@ -69,15 +69,15 @@ public class Main {
     }
     if (alt.booleanValue()) {
       if (uncompress.booleanValue()) {
-        LZWStream.uncompress(System.in, System.out);
+        LZCStream.uncompress(System.in, System.out);
       } else {
-        LZWStream.compress(System.in, System.out);
+        LZCStream.compress(System.in, System.out);
       }
     } else {
       if (uncompress.booleanValue()) {
-        LZWInputStream.uncompress(System.in, System.out);
+        LZCInputStream.uncompress(System.in, System.out);
       } else {
-        LZWOutputStream.compress(System.in, System.out);
+        LZCOutputStream.compress(System.in, System.out);
       }
     }
   }
