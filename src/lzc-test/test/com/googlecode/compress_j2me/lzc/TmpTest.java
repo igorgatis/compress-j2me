@@ -43,7 +43,7 @@ public class TmpTest extends UnitTest {
   public void test() throws FileNotFoundException, IOException {
     InputStream in = file2in("./tmp/bash.Z");
     OutputStream out = file2out("./tmp/bash");
-    LZWStream.uncompress(in, out);
+    LZCStream.uncompress(in, out);
   }
 
   public static void main(String[] args) throws IOException {

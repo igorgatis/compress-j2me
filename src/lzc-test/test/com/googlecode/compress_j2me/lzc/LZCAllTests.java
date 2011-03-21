@@ -30,10 +30,24 @@
 
 package com.googlecode.compress_j2me.lzc;
 
-import org.junit.Test;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
-public class LZWInputStreamTest {
-  @Test
-  public void test() {
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ LZCHashTest.class, LZCDictTest.class,
+    LZCStreamTest.class, LZCOutputStreamTest.class, LZCInputStreamTest.class,
+    LZCStreamE2ETest.class, LZCIOStreamsE2ETest.class })
+public class LZCAllTests {
+
+  public static Test suite() {
+    TestSuite suite = new TestSuite(LZCAllTests.class.getName());
+    //$JUnit-BEGIN$
+
+    //$JUnit-END$
+    return suite;
   }
+
 }

@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class LZWOutputStream extends OutputStream {
+public class LZCOutputStream extends OutputStream {
 
   private OutputStream out;
 
@@ -44,18 +44,18 @@ public class LZWOutputStream extends OutputStream {
   private int size;
 
   // LZW stream fields.
-  private LZWHash hash;
+  private LZCHash hash;
   private int w_code;
   private int mask_size;
 
-  public LZWOutputStream(OutputStream output) {
+  public LZCOutputStream(OutputStream output) {
     this.out = output;
     w_code = -1;
-    mask_size = LZWHash.INITIAL_MASK_SIZE;
+    mask_size = LZCHash.INITIAL_MASK_SIZE;
   }
 
   public void setNoHeader() {
-    hash = new LZWHash(1 << LZWHash.MAX_MASK_SIZE);
+    hash = new LZCHash(1 << LZCHash.MAX_MASK_SIZE);
   }
 
   private void writeBuffer(int left) throws IOException {
@@ -78,7 +78,7 @@ public class LZWOutputStream extends OutputStream {
     this.out.write((byte) 0x1F);
     this.out.write((byte) 0x9D);
     // block_mode=true, mask_size=LZWHash.MAX_MASK_SIZE
-    int flags = LZWHash.BLOCK_MODE_MASK | (0x1F & LZWHash.MAX_MASK_SIZE);
+    int flags = LZCHash.BLOCK_MODE_MASK | (0x1F & LZCHash.MAX_MASK_SIZE);
     this.out.write((byte) flags);
   }
 
@@ -99,11 +99,11 @@ public class LZWOutputStream extends OutputStream {
     // Flush whenever hash is full. Unix compress would observe compression
     // rate in order to decide when to flush - this is intentionally left
     // unimplemented to reduce code size (and complexity).
-    if (w_code < LZWHash.CLEAR_CODE
-        && hash.size() >= (1 << LZWHash.MAX_MASK_SIZE)) {
-      writeCode(LZWHash.CLEAR_CODE, mask_size);
+    if (w_code < LZCHash.CLEAR_CODE
+        && hash.size() >= (1 << LZCHash.MAX_MASK_SIZE)) {
+      writeCode(LZCHash.CLEAR_CODE, mask_size);
       hash.reset();
-      mask_size = LZWHash.INITIAL_MASK_SIZE;
+      mask_size = LZCHash.INITIAL_MASK_SIZE;
     }
   }
 
@@ -129,7 +129,7 @@ public class LZWOutputStream extends OutputStream {
   public void write(int b) throws IOException {
     if (hash == null) {
       writeHeader();
-      hash = new LZWHash(1 << LZWHash.MAX_MASK_SIZE);
+      hash = new LZCHash(1 << LZCHash.MAX_MASK_SIZE);
     }
     compress(b & 0xFF);
   }
@@ -149,7 +149,7 @@ public class LZWOutputStream extends OutputStream {
 
   public static void compress(InputStream in, OutputStream out)
       throws IOException {
-    LZWOutputStream lzwOut = new LZWOutputStream(out);
+    LZCOutputStream lzwOut = new LZCOutputStream(out);
     byte[] buffer = new byte[128];
     int bytesRead;
     while ((bytesRead = in.read(buffer)) >= 0) {
