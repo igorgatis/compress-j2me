@@ -57,7 +57,7 @@ public class AssertiveOutputStream extends OutputStream {
     this.baos.write(b);
   }
 
-  public byte[] getBytes() {
+  public byte[] toByteArray() {
     return this.baos.toByteArray();
   }
 

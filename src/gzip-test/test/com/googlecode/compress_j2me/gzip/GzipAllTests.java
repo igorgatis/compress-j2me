@@ -38,7 +38,8 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ZStreamTest.class, HuffmanTest.class, GzipTest.class })
+    ZStreamTest.class, HuffmanTest.class, LinkedHashTest.class, GzipTest.class,
+    GunzipTest.class, })
 public class GzipAllTests {
 
   public static Test suite() {
