@@ -263,7 +263,7 @@ class Huffman {
 
   private static final char[] _LITERAL_TO_CANONICAL_HUFFMAN;
   static {
-    _LITERAL_TO_CANONICAL_HUFFMAN = new char[256];
+    _LITERAL_TO_CANONICAL_HUFFMAN = new char[287];
     int i;
     for (i = 0; i < 144; i++) {
       _LITERAL_TO_CANONICAL_HUFFMAN[i] = pathAndNumBitsToChar(0x30 + i, 8);
@@ -309,7 +309,8 @@ class Huffman {
   static void encodeLength(int length, ZStream out) throws IOException {
     int idx = bsearch(length, LITLEN_CHAR_BITS,
         _LITLEN_CHAR_BITS_RANGE_START_MASK);
-    int litLenCode = _LITERAL_TO_CANONICAL_HUFFMAN[idx];
+    int litLenCodeIdx = idx + (END_OF_BLOCK_CODE + 1);
+    int litLenCode = _LITERAL_TO_CANONICAL_HUFFMAN[litLenCodeIdx];
     int code = litLenCode & _LITERAL_TO_CANONICAL_HUFFMAN_BITS_MASK;
     int codeNumBits = litLenCode >>> _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET;
     out.writeBits(code, codeNumBits);

@@ -111,27 +111,15 @@ class ZStream {
   //---------------------------------------------------------------------------
 
   private OutputStream out;
-  private long outputSize;
+  private int outputSize;
 
   public ZStream(OutputStream output, boolean keepCrc, int bitsCircularBuffer) {
     this(keepCrc, bitsCircularBuffer);
     this.out = output;
   }
 
-  public long getOutputSize() {
+  public int getOutputSize() {
     return outputSize;
-  }
-
-  public int byteAt(int distance) {
-    if (!this.hasCircularBuffer) {
-      throw new RuntimeException("buffer unavailable");
-    }
-    if (distance > this.bufferSize) {
-      throw new RuntimeException("invalid distance");
-    }
-    int idx = this.bufferOffset - distance;
-    idx = (idx + this.circularBuffer.length) & this.bufferMask;
-    return this.circularBuffer[idx];
   }
 
   private void writeInternal(int ch) throws IOException {
@@ -154,6 +142,12 @@ class ZStream {
       throw new RuntimeException("Unaligned byte");
     }
     writeInternal(ch);
+  }
+
+  void writeLittleEndian(int n, int len) throws IOException {
+    for (int i = 0; i < len; i++) {
+      write((n >>> (8 * i)) & 0xFF);
+    }
   }
 
   void copyFromEnd(int distance, int length) throws IOException {
@@ -189,10 +183,32 @@ class ZStream {
     this(input, false, 0);
   }
 
+  public int byteAtDistance(int distance) {
+    if (!this.hasCircularBuffer) {
+      throw new RuntimeException("buffer unavailable");
+    }
+    if (distance > this.bufferSize) {
+      return -1;
+      //throw new RuntimeException("invalid distance");
+    }
+    int idx = this.bufferOffset - distance;
+    idx = (idx + this.circularBuffer.length) & this.bufferMask;
+    return 0xFF & this.circularBuffer[idx];
+  }
+
   private int readInternal() throws IOException {
     int ch = this.in.read();
-    if (this.keepCrc && ch >= 0) {
-      updateCrc((byte) ch);
+    if (ch >= 0) {
+      if (this.keepCrc) {
+        updateCrc((byte) ch);
+      }
+      if (this.hasCircularBuffer) {
+        this.circularBuffer[this.bufferOffset] = (byte) ch;
+        this.bufferOffset = (this.bufferOffset + 1) & this.bufferMask;
+        if (this.bufferSize < this.circularBuffer.length) {
+          this.bufferSize++;
+        }
+      }
     }
     return ch;
   }
@@ -287,7 +303,7 @@ class ZStream {
     this.bitOffset += numBits;
 
     while (this.bitOffset > 8) {
-      write((byte) this.bitBuffer);
+      writeInternal((byte) this.bitBuffer);
       this.outputSize++;
       this.bitBuffer >>>= 8;
       this.bitOffset -= 8;
