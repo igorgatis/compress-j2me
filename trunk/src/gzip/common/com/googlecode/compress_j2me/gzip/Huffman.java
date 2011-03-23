@@ -175,14 +175,14 @@ class Huffman {
     return length;
   }
 
-  // 0xF0=distance, 0x0F=extra bits.
+  // 0xFFFF0000=extra bits, 0x0000FFFF=distance.
   private static final int _DIST_CHAR_BITS_EXTRA_OFFSET = 16;
   private static final int _DIST_CHAR_BITS_VALUE_MASK = 0xFFFF;
   private static final int[] DIST_CHAR_BITS = new int[] { //
-      0x01, 0x02, 0x03, 0x04, 0x10005, 0x10007, 0x20009, 0x2000D, 0x30011,
-      0x30019, 0x40021, 0x40031, 0x50041, 0x50061, 0x60081, 0x600C1, 0x70101,
-      0x70181, 0x80201, 0x80301, 0x90401, 0x90601, 0xA0801, 0xA0C01, 0xB1001,
-      0xB1801, 0xC2001, 0xC3001, 0xD4001, 0xD6001, };
+      0x00001, 0x00002, 0x00003, 0x00004, 0x10005, 0x10007, 0x20009, 0x2000D,
+      0x30011, 0x30019, 0x40021, 0x40031, 0x50041, 0x50061, 0x60081, 0x600C1,
+      0x70101, 0x70181, 0x80201, 0x80301, 0x90401, 0x90601, 0xA0801, 0xA0C01,
+      0xB1001, 0xB1801, 0xC2001, 0xC3001, 0xD4001, 0xD6001, };
 
   static int decodeDistance(int distCode, ZStream in) throws IOException {
     int codedDistance = DIST_CHAR_BITS[distCode];
@@ -258,7 +258,14 @@ class Huffman {
   private static final int _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET = 9;
 
   private static char pathAndNumBitsToChar(int path, int numBits) {
-    return (char) (path | (numBits << _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET));
+    int reservedPath = 0;
+    for (int i = 0; i < numBits; i++) {
+      reservedPath <<= 1;
+      if ((path & (1 << i)) != 0) {
+        reservedPath |= 1;
+      }
+    }
+    return (char) (reservedPath | (numBits << _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET));
   }
 
   private static final char[] _LITERAL_TO_CANONICAL_HUFFMAN;
@@ -292,7 +299,7 @@ class Huffman {
   private static int bsearch(int key, int[] values, int mask) {
     int p = 0, q = values.length;
     while (p < q) {
-      int m = (p + q) / 2;
+      int m = (p + q + 1) / 2;
       int value = values[m] & mask;
       if (key == value) {
         return m;
@@ -300,10 +307,10 @@ class Huffman {
       if (key < value) {
         q = m - 1;
       } else {
-        p = m + 1;
+        p = m;
       }
     }
-    return q;
+    return p;
   }
 
   static void encodeLength(int length, ZStream out) throws IOException {

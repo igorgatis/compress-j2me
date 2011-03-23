@@ -164,51 +164,27 @@ public class Gzip {
     return inflate(new ZStream(in, false, 0), outStream);
   }
 
-  private static int readMore(ZStream in, byte[] buffer, int bufferOffset,
-      int bufferSize) throws IOException {
-    int remain = bufferSize - bufferOffset;
-    for (int i = 0; i < remain; i++) {
-      buffer[i] = buffer[bufferOffset + i];
-    }
-    return remain + in.read(buffer, remain, buffer.length - remain);
-  }
-
   private static boolean isValidPair(int length, int distance) {
     int distanceInBlock = distance + length;
     return distance >= 0 && (distanceInBlock + 1) < MAX_DEFLATE_DISTANCE //
         && (length + 1) < MAX_DEFLATE_LENGTH;
   }
 
-  private static int deflateBlock(ZStream in, ZStream out) throws IOException {
-    boolean lastBlock = false;
-    LinkedHash hash = new LinkedHash(DEFLATE_HASH_SIZE);
+  private static void deflateBlock(LinkedHash hash, byte[] buffer,
+      int bufferSize, ZStream out) throws IOException {
     int inputOffset = 0;
     int distance = -1;
     int length = 0;
     int prevKey = 0;
-    byte[] buffer = new byte[7];
-    int bufferSize = in.read(buffer, 0, buffer.length);
-
-    out.writeBits(lastBlock ? 1 : 0, 1); // This is a final block.
-    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
     for (int i = 0; i < bufferSize; i++, inputOffset++) {
-      // Read more data if needed.
-      int bufferRemain = bufferSize - i;
-      if (!lastBlock && bufferRemain < 3) {
-        bufferSize = readMore(in, buffer, i, bufferSize);
-        lastBlock = bufferSize <= bufferRemain;
-        bufferRemain = bufferSize;
-        i = 0;
-      }
-
       int ch = 0xFF & buffer[i];
       length++;
       int newKey = hash.newKey(prevKey, (byte) ch);
       prevKey = hash.put(newKey, inputOffset - (hash.keyLen(newKey) - 1));
 
       boolean validPair = isValidPair(length, distance);
-      int otherCh = validPair ? in.byteAtDistance(bufferRemain + distance) : -1;
-      if (ch == otherCh && bufferRemain > 1) {
+      int otherCh = validPair ? buffer[i - distance] : -1;
+      if (ch == otherCh && (i + 1) < bufferSize) {
         continue;
       } else if (length > 1) {
         Huffman.encodeLength(length, out);
@@ -218,26 +194,40 @@ public class Gzip {
       }
       distance = -1;
       length = 0;
-      if (bufferRemain > 2) {
-        int marker = hash.get(buffer, i + 1, bufferRemain - 1);
+      if ((i + 3) < bufferSize) {
+        int marker = hash.get(buffer, i + 1, bufferSize - i - 1);
         if (marker >= 0) {
           distance = inputOffset - marker + 1;
         }
       }
     }
+  }
+
+  private static void deflate(ZStream in, ZStream out) throws IOException {
+    LinkedHash hash = new LinkedHash(DEFLATE_HASH_SIZE);
+    byte[] buffer = new byte[7];
+    int bufferSize;
+    while ((bufferSize = in.read(buffer, 0, buffer.length)) > 0) {
+      out.writeBits(0, 1);
+      out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
+      deflateBlock(hash, buffer, bufferSize, out);
+      Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
+    }
+    out.writeBits(1, 1);
+    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
     Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
     out.end();
-    return out.getSize();
   }
 
   public static int deflate(InputStream in, OutputStream out)
       throws IOException {
-    ZStream inStream = new ZStream(in, true, INFLATE_WINDOW_BITS);
-    return deflateBlock(inStream, new ZStream(out, false, 0));
+    ZStream outStream = new ZStream(out, false, 0);
+    deflate(new ZStream(in, true, 0), outStream);
+    return outStream.getSize();
   }
 
   public static int gzip(InputStream in, OutputStream out) throws IOException {
-    ZStream inStream = new ZStream(in, true, INFLATE_WINDOW_BITS);
+    ZStream inStream = new ZStream(in, true, 0);
     ZStream outStream = new ZStream(out, false, 0);
     outStream.writeLittleEndian(ZStream.GZIP_MAGIC_NUMBER, 2);
     outStream.write(ZStream.CM_DEFLATE);
@@ -245,10 +235,10 @@ public class Gzip {
     for (int i = 0; i < 7; i++) {
       outStream.write(0);
     }
-    int size = deflateBlock(inStream, outStream);
+    deflate(inStream, outStream);
     outStream.writeLittleEndian(inStream.getCrc(), 4);
     outStream.writeLittleEndian(inStream.getSize(), 4);
-    return size;
+    return outStream.getSize();
   }
 
   //---------------------------------------------------------------------------
