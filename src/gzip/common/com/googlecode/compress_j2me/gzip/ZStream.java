@@ -123,7 +123,6 @@ class ZStream {
   }
 
   private void writeInternal(int ch) throws IOException {
-    System.out.println(Integer.toHexString(0xff & ch));
     this.out.write(ch);
     this.size++;
     if (this.keepCrc) {
