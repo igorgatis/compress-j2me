@@ -155,7 +155,7 @@ public class Gzip {
       }
     } while (!finalBlock);
     in.alignBytes();
-    return out.getOutputSize();
+    return out.getSize();
   }
 
   public static long inflate(InputStream in, OutputStream out)
@@ -179,10 +179,8 @@ public class Gzip {
         && (length + 1) < MAX_DEFLATE_LENGTH;
   }
 
-  private static int simpleDeflate(ZStream in, ZStream out) throws IOException {
-    out.writeBits(1, 1); // This is a final block.
-    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
-
+  private static int deflateBlock(ZStream in, ZStream out) throws IOException {
+    boolean lastBlock = false;
     LinkedHash hash = new LinkedHash(DEFLATE_HASH_SIZE);
     int inputOffset = 0;
     int distance = -1;
@@ -190,7 +188,9 @@ public class Gzip {
     int prevKey = 0;
     byte[] buffer = new byte[7];
     int bufferSize = in.read(buffer, 0, buffer.length);
-    boolean lastBlock = false;
+
+    out.writeBits(lastBlock ? 1 : 0, 1); // This is a final block.
+    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
     for (int i = 0; i < bufferSize; i++, inputOffset++) {
       // Read more data if needed.
       int bufferRemain = bufferSize - i;
@@ -225,14 +225,15 @@ public class Gzip {
         }
       }
     }
+    Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
     out.end();
-    return out.getOutputSize();
+    return out.getSize();
   }
 
   public static int deflate(InputStream in, OutputStream out)
       throws IOException {
     ZStream inStream = new ZStream(in, true, INFLATE_WINDOW_BITS);
-    return simpleDeflate(inStream, new ZStream(out, false, 0));
+    return deflateBlock(inStream, new ZStream(out, false, 0));
   }
 
   public static int gzip(InputStream in, OutputStream out) throws IOException {
@@ -244,9 +245,9 @@ public class Gzip {
     for (int i = 0; i < 7; i++) {
       outStream.write(0);
     }
-    int size = simpleDeflate(inStream, outStream);
+    int size = deflateBlock(inStream, outStream);
     outStream.writeLittleEndian(inStream.getCrc(), 4);
-    outStream.writeLittleEndian(size, 4);
+    outStream.writeLittleEndian(inStream.getSize(), 4);
     return size;
   }
 
@@ -295,7 +296,9 @@ public class Gzip {
     if (expectedCrc != actualCrc) {
       throw new IOException("CRC check failed.");
     }
-    if ((out.getOutputSize() & 0xFFFFFFFF) != in.readLittleEndian(4)) {
+    int actualSize = out.getSize();
+    int expectedSize = in.readLittleEndian(4);
+    if ((actualSize & 0xFFFFFFFF) != expectedSize) {
       throw new IOException("Size mismatches.");
     }
   }

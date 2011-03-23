@@ -49,6 +49,7 @@ class ZStream {
   // Circular buffer feature.
   //---------------------------------------------------------------------------
 
+  private int size;
   private boolean hasCircularBuffer;
   private byte[] circularBuffer;
   private int bufferMask;
@@ -62,6 +63,10 @@ class ZStream {
       this.bufferMask = (1 << bitsCircularBuffer) - 1;
       this.circularBuffer = new byte[1 << bitsCircularBuffer];
     }
+  }
+
+  public int getSize() {
+    return size;
   }
 
   //---------------------------------------------------------------------------
@@ -111,20 +116,16 @@ class ZStream {
   //---------------------------------------------------------------------------
 
   private OutputStream out;
-  private int outputSize;
 
   public ZStream(OutputStream output, boolean keepCrc, int bitsCircularBuffer) {
     this(keepCrc, bitsCircularBuffer);
     this.out = output;
   }
 
-  public int getOutputSize() {
-    return outputSize;
-  }
-
   private void writeInternal(int ch) throws IOException {
+    System.out.println(Integer.toHexString(0xff & ch));
     this.out.write(ch);
-    this.outputSize++;
+    this.size++;
     if (this.keepCrc) {
       updateCrc((byte) ch);
     }
@@ -199,6 +200,7 @@ class ZStream {
   private int readInternal() throws IOException {
     int ch = this.in.read();
     if (ch >= 0) {
+      this.size++;
       if (this.keepCrc) {
         updateCrc((byte) ch);
       }
@@ -304,7 +306,7 @@ class ZStream {
 
     while (this.bitOffset > 8) {
       writeInternal((byte) this.bitBuffer);
-      this.outputSize++;
+      this.size++;
       this.bitBuffer >>>= 8;
       this.bitOffset -= 8;
     }
@@ -313,7 +315,7 @@ class ZStream {
   void end() throws IOException {
     while (this.bitOffset > 0) {
       writeInternal(0xFF & this.bitBuffer);
-      this.outputSize++;
+      this.size++;
       this.bitBuffer >>>= 8;
       this.bitOffset -= 8;
     }
