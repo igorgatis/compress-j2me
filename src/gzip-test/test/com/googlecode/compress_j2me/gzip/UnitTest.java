@@ -33,6 +33,7 @@ package com.googlecode.compress_j2me.gzip;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +48,10 @@ public class UnitTest {
 
   public static ByteArrayInputStream h2in(String content) {
     return new ByteArrayInputStream(h2b(content));
+  }
+
+  public static ByteArrayInputStream b2in(byte[] content) {
+    return new ByteArrayInputStream(content);
   }
 
   public static ByteArrayInputStream file2in(String fileName) {
@@ -141,6 +146,13 @@ public class UnitTest {
       buffer.write(data, 0, read);
     }
     return buffer.toByteArray();
+  }
+
+  public static final void writeFile(String fileName, byte[] data)
+      throws IOException {
+    FileOutputStream out = new FileOutputStream(fileName);
+    out.write(data);
+    out.close();
   }
 
   public static String toHex(int ch) {

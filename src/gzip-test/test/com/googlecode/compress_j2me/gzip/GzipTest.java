@@ -30,7 +30,6 @@
 
 package com.googlecode.compress_j2me.gzip;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
@@ -40,118 +39,106 @@ import org.junit.Test;
 
 public class GzipTest extends UnitTest {
 
-  private AssertiveOutputStream baos;
+  private ByteArrayOutputStream baos;
+  private AssertiveOutputStream aos;
 
   @Test
   public void testGzipEmpty() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/empty"), out = new ByteArrayOutputStream());
+    String path = "samples/empty";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
+    writeFile(path + ".gz2", baos.toByteArray());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/empty"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/empty"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzipA() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/a"), out = new ByteArrayOutputStream());
+    String path = "samples/a";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
+    writeFile(path + ".gz2", baos.toByteArray());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/a"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/a"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzipABCDEx10() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/ABCDEx10"), out = new ByteArrayOutputStream());
+    String path = "samples/ABCDEx10";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
+    writeFile(path + ".gz2", baos.toByteArray());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/ABCDEx10"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/ABCDEx10"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzip0xF0FF() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/0xF0FF"), out = new ByteArrayOutputStream());
+    String path = "samples/0xF0FF";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
+    writeFile(path + ".gz2", baos.toByteArray());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/0xF0FF"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/0xF0FF"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzipAx10() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/Ax10.txt"), out = new ByteArrayOutputStream());
+    String path = "samples/Ax10.txt";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/Ax10.txt"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/Ax10.txt"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzipHelloWorld() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/hello_world.txt"), out = new ByteArrayOutputStream());
+    String path = "samples/Ax10.txt";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/hello_world.txt"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/hello_world.txt"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 
   @Test
   public void testGzipGoogleLogo() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/google_logo.png"), out = new ByteArrayOutputStream());
+    String path = "samples/google_logo.png";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/google_logo.png"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/google_logo.png"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
-
 
   @Test
   public void testGzipBash() throws IOException {
-    ByteArrayOutputStream out;
-    Gzip.gzip(file2in("samples/bash"), out = new ByteArrayOutputStream());
+    String path = "samples/bash";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
 
-    ByteArrayInputStream bais = new ByteArrayInputStream(out.toByteArray());
-    Gzip.gunzip(bais, baos = file2out("samples/bash"));
-    
-    bais = new ByteArrayInputStream(out.toByteArray());
-    GZIPInputStream gzipIn = new GZIPInputStream(bais);
-    pump(gzipIn, baos = file2out("samples/bash"));
-    Assert.assertEquals(baos.expectedSize(), baos.size());
+    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
+
+    pump(new GZIPInputStream(b2in(baos.toByteArray())), aos = file2out(path));
+    Assert.assertEquals(aos.expectedSize(), aos.size());
   }
 }
