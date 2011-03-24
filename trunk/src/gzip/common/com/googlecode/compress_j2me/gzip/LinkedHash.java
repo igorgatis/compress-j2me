@@ -14,11 +14,16 @@ class LinkedHash {
       throw new RuntimeException("invalid table size");
     }
     this.entries = new short[(int) (size * 1.333)];
+    this.keys = new int[size];
+    this.markers = new int[size];
+    reset();
+  }
+
+  void reset() {
     for (int i = 0; i < this.entries.length; i++) {
       this.entries[i] = -1;
     }
-    this.keys = new int[size];
-    this.markers = new int[size];
+    this.size = 0;
   }
 
   int size() {
@@ -27,13 +32,7 @@ class LinkedHash {
 
   int newKey(int oldKey, byte lastByte) {
     int newKey = ((0x0000FFFF & oldKey) << 8) | (0xFF & lastByte);
-    int newLen = Math.min(3, ((oldKey >>> 24) & 0x0F) + 1);
-    newKey |= newLen << 24;
     return newKey;
-  }
-
-  int keyLen(int key) {
-    return (key >>> 24) & 0x0F;
   }
 
   private int calcHash(int key) {
@@ -59,41 +58,34 @@ class LinkedHash {
     return hash;
   }
 
-  int put(int key, int marker) {
-    if (this.size == this.markers.length) {
-      // Table is full. Need to remove an item.
+  void put(int key, int marker) {
+    if (marker >= 0) {
+      if (this.size == this.markers.length) {
+        // Table is full. Need to remove an item.
+        return;
+      }
+      int hash = find(key);
+      if (this.entries[hash] < 0) {
+        this.entries[hash] = (short) this.size;
+        this.keys[this.size] = key;
+        this.markers[this.size] = marker;
+        this.size++;
+      }
     }
-    int hash = find(key);
-    if (this.entries[hash] < 0) {
-      this.entries[hash] = (short) this.size;
-      this.keys[this.size] = key;
-      this.markers[this.size] = marker;
-      this.size++;
-      return key;
-    }
-    return key;
-  }
-
-  private int toKey(byte[] buffer, int start, int length) {
-    length = Math.min(3, length - start);
-    int key = length << 24;
-    switch (length) {
-    case 3:
-      key |= buffer[start] << 16;
-    case 2:
-      key |= buffer[start + 1] << 8;
-    case 1:
-      key |= buffer[start + 2];
-    }
-    return key;
   }
 
   int get(byte[] buffer, int start, int length) {
-    int key = toKey(buffer, start, length);
-    int hash = find(key);
-    int idx = this.entries[hash];
-    if (idx >= 0) {
-      return this.markers[idx];
+    if (length > 2) {
+      int key = 0;
+      key |= buffer[start] << 16;//24;
+      key |= buffer[start + 1] << 8;//16;
+      key |= buffer[start + 2];// << 8;
+      //key |= buffer[start + 3];
+      int hash = find(key);
+      int idx = this.entries[hash];
+      if (idx >= 0) {
+        return this.markers[idx];
+      }
     }
     return -1;
   }
