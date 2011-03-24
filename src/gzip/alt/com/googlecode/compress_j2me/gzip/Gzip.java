@@ -100,6 +100,7 @@ public class Gzip {
         int length = Huffman.decodeLength(litLenCode, in);
         int distCode = Huffman.decodeSymbol(in, distTree);
         int distance = Huffman.decodeDistance(distCode, in);
+        //System.out.println("d=" + distance + ",l=" + length);
         out.copyFromEnd(distance, length);
       }
     }
@@ -139,7 +140,7 @@ public class Gzip {
       int blockType = in.readBits(2);
       switch (blockType) {
       case BTYPE_NO_COMPRESSION:
-        in.alignBytes(); // Discard the rest of header.
+        in.alignInputBytes(); // Discard the rest of header.
         inflateRawBlock(in, out);
         break;
       case BTYPE_STATIC_HUFFMAN:
@@ -154,7 +155,7 @@ public class Gzip {
         throw new IOException("Invalid block.");
       }
     } while (!finalBlock);
-    in.alignBytes();
+    in.alignInputBytes();
     return out.getSize();
   }
 
@@ -164,52 +165,43 @@ public class Gzip {
     return inflate(new ZStream(in, false, 0), outStream);
   }
 
-  private static boolean isValidPair(int length, int distance) {
-    int distanceInBlock = distance + length;
-    return distance >= 0 && (distanceInBlock + 1) < MAX_DEFLATE_DISTANCE //
-        && (length + 1) < MAX_DEFLATE_LENGTH;
-  }
-
   private static void deflateBlock(LinkedHash hash, byte[] buffer,
       int bufferSize, ZStream out) throws IOException {
-    int inputOffset = 0;
-    int distance = -1;
-    int length = 0;
     int prevKey = 0;
-    for (int i = 0; i < bufferSize; i++, inputOffset++) {
-      int ch = 0xFF & buffer[i];
-      int newKey = hash.newKey(prevKey, (byte) ch);
-      hash.put(newKey, inputOffset - 2);
-      prevKey = newKey;
-
-      boolean validPair = isValidPair(length, distance);
-      int otherCh = validPair ? buffer[i - distance] : -1;
-      if (ch == otherCh) {
-        length++;
-        if ((i + 1) < bufferSize) {
+    for (int i = 0; i < bufferSize; i++) {
+      int marker = hash.get(buffer, i, bufferSize - i);
+      if (marker >= 0) {
+        final int distance = i - marker;
+        int length = 0;
+        for (; (i + length) < bufferSize; length++) {
+          int ch = 0xFF & buffer[i + length];
+          //prevKey = hash.put(prevKey, (byte) ch, i + length - 2);
+          int chOld = 0xFF & buffer[marker + length];
+          if (ch != chOld //
+              || (length + 1) >= MAX_DEFLATE_LENGTH //
+              || (distance + length + 1) >= MAX_DEFLATE_DISTANCE) {
+            break;
+          }
+        }
+        if (length > 2) {
+          Huffman.encodeLength(length, out);
+          Huffman.encodeDistance(distance, out);
+          //System.out.println("d=" + distance + ",l=" + length);
+          i += length - 1;
           continue;
         }
       }
-      if (length > 1) {
-        Huffman.encodeLength(length, out);
-        Huffman.encodeDistance(distance, out);
-      }
-      if (ch != otherCh) {
-        Huffman.encodeLiteral(ch, out);
-      }
-      distance = -1;
-      length = 0;
-      int marker = hash.get(buffer, i + 1, bufferSize - i - 1);
-      if (marker >= 0) {
-        distance = inputOffset - marker + 1;
-      }
+
+      int ch = 0xFF & buffer[i];
+      prevKey = hash.put(prevKey, (byte) ch, i - 2);
+      Huffman.encodeLiteral(ch, out);
     }
   }
 
   private static void deflate(ZStream in, ZStream out) throws IOException {
     LinkedHash hash = new LinkedHash(DEFLATE_HASH_SIZE);
     boolean lastBlock = false;
-    byte[] buffer = new byte[37];
+    byte[] buffer = new byte[MAX_DEFLATE_DISTANCE];
     int bufferSize;
     while (!lastBlock && (bufferSize = in.read(buffer, 0, buffer.length)) >= 0) {
       lastBlock = bufferSize < buffer.length;
@@ -219,7 +211,7 @@ public class Gzip {
       deflateBlock(hash, buffer, bufferSize, out);
       Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
     }
-    out.end();
+    out.alignOutputBytes();
   }
 
   public static int deflate(InputStream in, OutputStream out)

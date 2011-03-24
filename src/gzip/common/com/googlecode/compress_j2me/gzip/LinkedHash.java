@@ -30,11 +30,6 @@ class LinkedHash {
     return this.size;
   }
 
-  int newKey(int oldKey, byte lastByte) {
-    int newKey = ((0x0000FFFF & oldKey) << 8) | (0xFF & lastByte);
-    return newKey;
-  }
-
   private int calcHash(int key) {
     int hash = HASH_PRIME + (key & 0xFF);
     hash = hash * HASH_PRIME + ((key >>> 8) & 0xFF);
@@ -58,29 +53,36 @@ class LinkedHash {
     return hash;
   }
 
-  void put(int key, int marker) {
+  //  int newKey(int oldKey, byte lastByte) {
+  //    int newKey = ((0x0000FFFF & oldKey) << 8) | (0xFF & lastByte);
+  //    return newKey;
+  //  }
+
+  int put(int oldKey, byte lastByte, int marker) {
+    int key = ((0x0000FFFF & oldKey) << 8) | (0xFF & lastByte);
     if (marker >= 0) {
-      if (this.size == this.markers.length) {
-        // Table is full. Need to remove an item.
-        return;
-      }
       int hash = find(key);
       if (this.entries[hash] < 0) {
+        if (this.size == this.markers.length) {
+          // Table is full. Need to remove an item.
+          return key;
+        }
         this.entries[hash] = (short) this.size;
         this.keys[this.size] = key;
         this.markers[this.size] = marker;
         this.size++;
       }
     }
+    return key;
   }
 
   int get(byte[] buffer, int start, int length) {
     if (length > 2) {
       int key = 0;
-      key |= buffer[start] << 16;//24;
-      key |= buffer[start + 1] << 8;//16;
-      key |= buffer[start + 2];// << 8;
-      //key |= buffer[start + 3];
+      key |= (0xFF & buffer[start]) << 16;//24;
+      key |= (0xFF & buffer[start + 1]) << 8;//16;
+      key |= (0xFF & buffer[start + 2]);// << 8;
+      //key |= (0xFF & buffer[start + 3]);
       int hash = find(key);
       int idx = this.entries[hash];
       if (idx >= 0) {
