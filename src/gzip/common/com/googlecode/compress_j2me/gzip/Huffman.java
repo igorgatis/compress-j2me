@@ -256,8 +256,8 @@ class Huffman {
 
   private static final int _LITERAL_TO_CANONICAL_HUFFMAN_BITS_MASK = 0x01FF;
   private static final int _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET = 9;
-
-  private static char pathAndNumBitsToChar(int path, int numBits) {
+  
+  private static int reverse(int path, int numBits) {
     int reservedPath = 0;
     for (int i = 0; i < numBits; i++) {
       reservedPath <<= 1;
@@ -265,6 +265,11 @@ class Huffman {
         reservedPath |= 1;
       }
     }
+    return reservedPath;
+  }
+
+  private static char pathAndNumBitsToChar(int path, int numBits) {
+    int reservedPath = reverse(path, numBits);
     return (char) (reservedPath | (numBits << _LITERAL_TO_CANONICAL_HUFFMAN_NUMBITS_OFFSET));
   }
 
@@ -330,7 +335,8 @@ class Huffman {
 
   static void encodeDistance(int distance, ZStream out) throws IOException {
     int idx = bsearch(distance, DIST_CHAR_BITS, _DIST_CHAR_BITS_VALUE_MASK);
-    out.writeBits(idx, 5);
+    int reservedPath = reverse(idx, 5);
+    out.writeBits(reservedPath, 5);
     int extra = DIST_CHAR_BITS[idx] >>> _DIST_CHAR_BITS_EXTRA_OFFSET;
     if (extra > 0) {
       distance -= DIST_CHAR_BITS[idx] & _DIST_CHAR_BITS_VALUE_MASK;

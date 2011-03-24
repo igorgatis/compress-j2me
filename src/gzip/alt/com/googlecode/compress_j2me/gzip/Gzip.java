@@ -178,44 +178,47 @@ public class Gzip {
     int prevKey = 0;
     for (int i = 0; i < bufferSize; i++, inputOffset++) {
       int ch = 0xFF & buffer[i];
-      length++;
       int newKey = hash.newKey(prevKey, (byte) ch);
-      prevKey = hash.put(newKey, inputOffset - (hash.keyLen(newKey) - 1));
+      hash.put(newKey, inputOffset - 2);
+      prevKey = newKey;
 
       boolean validPair = isValidPair(length, distance);
       int otherCh = validPair ? buffer[i - distance] : -1;
-      if (ch == otherCh && (i + 1) < bufferSize) {
-        continue;
-      } else if (length > 1) {
+      if (ch == otherCh) {
+        length++;
+        if ((i + 1) < bufferSize) {
+          continue;
+        }
+      }
+      if (length > 1) {
         Huffman.encodeLength(length, out);
         Huffman.encodeDistance(distance, out);
-      } else {
+      }
+      if (ch != otherCh) {
         Huffman.encodeLiteral(ch, out);
       }
       distance = -1;
       length = 0;
-      if ((i + 3) < bufferSize) {
-        int marker = hash.get(buffer, i + 1, bufferSize - i - 1);
-        if (marker >= 0) {
-          distance = inputOffset - marker + 1;
-        }
+      int marker = hash.get(buffer, i + 1, bufferSize - i - 1);
+      if (marker >= 0) {
+        distance = inputOffset - marker + 1;
       }
     }
   }
 
   private static void deflate(ZStream in, ZStream out) throws IOException {
     LinkedHash hash = new LinkedHash(DEFLATE_HASH_SIZE);
-    byte[] buffer = new byte[7];
+    boolean lastBlock = false;
+    byte[] buffer = new byte[37];
     int bufferSize;
-    while ((bufferSize = in.read(buffer, 0, buffer.length)) > 0) {
-      out.writeBits(0, 1);
+    while (!lastBlock && (bufferSize = in.read(buffer, 0, buffer.length)) >= 0) {
+      lastBlock = bufferSize < buffer.length;
+      hash.reset();
+      out.writeBits(lastBlock ? 1 : 0, 1);
       out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
       deflateBlock(hash, buffer, bufferSize, out);
       Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
     }
-    out.writeBits(1, 1);
-    out.writeBits(BTYPE_STATIC_HUFFMAN, 2);
-    Huffman.encodeLiteral(Huffman.END_OF_BLOCK_CODE, out);
     out.end();
   }
 
