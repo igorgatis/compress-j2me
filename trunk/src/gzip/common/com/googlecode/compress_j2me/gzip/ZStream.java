@@ -272,7 +272,7 @@ class ZStream {
   private int bitBuffer;
   private int bitOffset;
 
-  void alignBytes() throws IOException {
+  void alignInputBytes() throws IOException {
     readBits(this.bitOffset);
     this.unaligned = false;
   }
@@ -292,15 +292,23 @@ class ZStream {
     int code = this.bitBuffer & mask;
     this.bitBuffer >>>= numBits;
     this.bitOffset -= numBits;
-    //System.err.println(numBits + ":" + code);
+    //System.out.println(numBits + ":" + bin(code, numBits));
     return code;
   }
 
-  void writeBits(int ch, int numBits) throws IOException {
+  //  static String bin(int bits, int length) {
+  //    StringBuffer buffer = new StringBuffer();
+  //    while (length-- > 0) {
+  //      buffer.append((bits & (1 << length)) != 0 ? '1' : '0');
+  //    }
+  //    return buffer.toString();
+  //  }
+
+  void writeBits(int code, int numBits) throws IOException {
     this.unaligned = true;
-    //System.err.println(numBits + ":" + code);
+    //System.out.println(numBits + ":" + bin(code, numBits));
     int mask = (1 << numBits) - 1;
-    this.bitBuffer |= (mask & ch) << this.bitOffset;
+    this.bitBuffer |= (mask & code) << this.bitOffset;
     this.bitOffset += numBits;
 
     while (this.bitOffset > 8) {
@@ -311,7 +319,7 @@ class ZStream {
     }
   }
 
-  void end() throws IOException {
+  void alignOutputBytes() throws IOException {
     while (this.bitOffset > 0) {
       writeInternal(0xFF & this.bitBuffer);
       this.size++;
