@@ -51,7 +51,7 @@ public class AssertiveOutputStream extends OutputStream {
     int actualByte = 0xFF & b;
     int expectedByte = 0xFF & this.expected[this.offset];
     if (expectedByte != actualByte) {
-      Assert.assertEquals(expectedByte, actualByte);
+      Assert.assertEquals("offset=" + this.offset, expectedByte, actualByte);
     }
     this.offset++;
     this.baos.write(b);

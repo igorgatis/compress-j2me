@@ -41,24 +41,27 @@ import org.junit.Test;
 public class GzipTest extends UnitTest {
 
   private ByteArrayOutputStream baos;
-  private AssertiveOutputStream aos;
 
-  private void gunzip(InputStream in, AssertiveOutputStream out)
+  private void javaGunzip(InputStream in, AssertiveOutputStream out)
       throws IOException {
     pump(new GZIPInputStream(in), out);
     Assert.assertEquals(out.expectedSize(), out.size());
   }
 
+  private void j2meGunzip(InputStream in, AssertiveOutputStream out)
+      throws IOException {
+    Gzip.gunzip(in, out);
+    Assert.assertEquals(out.expectedSize(), out.size());
+  }
+
   @Test
   public void test() throws IOException {
-    String path = "samples/test.txt";
+    String path = "samples/license.txt";
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -67,10 +70,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -79,10 +80,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -91,10 +90,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -103,10 +100,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -115,10 +110,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -127,10 +120,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -139,10 +130,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -151,10 +140,8 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 
   @Test
@@ -163,9 +150,17 @@ public class GzipTest extends UnitTest {
     Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
     writeFile(path + ".gz2", baos.toByteArray());
 
-    gunzip(b2in(baos.toByteArray()), aos = file2out(path));
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
+  }
 
-    Gzip.gunzip(b2in(baos.toByteArray()), aos = file2out(path));
-    Assert.assertEquals(aos.expectedSize(), aos.size());
+  @Test
+  public void testGzipKsh93() throws IOException {
+    String path = "samples/ksh93";
+    Gzip.gzip(file2in(path), baos = new ByteArrayOutputStream());
+    writeFile(path + ".gz2", baos.toByteArray());
+
+    j2meGunzip(b2in(baos.toByteArray()), file2out(path));
+    javaGunzip(b2in(baos.toByteArray()), file2out(path));
   }
 }
