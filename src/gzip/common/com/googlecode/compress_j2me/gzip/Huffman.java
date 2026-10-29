@@ -252,7 +252,7 @@ class Huffman {
         repeat = 3 + in.readBits(3);
         break;
       case 18:
-        repeat = 11 + in.readBits(3);
+        repeat = 11 + in.readBits(7);
         break;
       default:
         lengths[i++] = (char) code;
